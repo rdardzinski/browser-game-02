@@ -6,7 +6,6 @@ const scoreElement = document.getElementById("score");
 const livesElement = document.getElementById("lives");
 const bestScoreElement = document.getElementById("bestScore");
 const levelIndicatorElement = document.getElementById("levelIndicator");
-const restartButton = document.getElementById("restartButton");
 const pauseButton = document.getElementById("pauseButton");
 const startButton = document.getElementById("startButton");
 const helpButton = document.getElementById("helpButton");
@@ -51,7 +50,7 @@ const JOYSTICK_MAX_OFFSET = 22;
 const JOYSTICK_DEADZONE = 0.18;
 const PLAYER_WIDTH = 22;
 const PLAYER_HEIGHT = 30;
-const PLAYER_DRAW_WIDTH = 30;
+const PLAYER_DRAW_WIDTH = 36;
 
 const TILE = {
   EMPTY: 0,
@@ -161,9 +160,6 @@ function updateBestScore() {
 }
 
 function updateRuntimeButtons() {
-  restartButton.textContent =
-    game.mode === "play" ? "Restart poziomu" : "Menu startowe";
-  restartButton.hidden = game.mode !== "play";
   pauseButton.hidden = game.mode !== "play";
   touchControls.hidden = game.mode !== "play";
 }
@@ -763,6 +759,7 @@ function createPlayer(x, y) {
     coyote: COYOTE_TIME,
     jumpBuffer: 0,
     invincible: 0,
+    landTimer: 0,
   };
 }
 
@@ -785,6 +782,7 @@ function respawnPlayer() {
   player.coyote = COYOTE_TIME;
   player.jumpBuffer = 0;
   player.invincible = INVINCIBLE_TIME;
+  player.landTimer = 0;
 }
 
 function takeDamage(reason) {
@@ -965,6 +963,7 @@ function updatePlayer(dt) {
   player.onGround = resolveVertical(player);
 
   if (!wasOnGround && player.onGround) {
+    player.landTimer = 0.16;
     spawnBurstEffect(
       player.x + player.width / 2,
       player.y + player.height,
@@ -982,6 +981,10 @@ function updatePlayer(dt) {
 
   if (player.invincible > 0) {
     player.invincible = Math.max(0, player.invincible - dt);
+  }
+
+  if (player.landTimer > 0) {
+    player.landTimer = Math.max(0, player.landTimer - dt);
   }
 
   checkPlayerInteractions();
@@ -1386,42 +1389,46 @@ function drawWorldTiles() {
 function drawGroundTile(x, y, tileX, tileY) {
   const s = displayScale;
   const variant = (tileX + tileY) % 4;
-  context.fillStyle = "#4c2d17";
+  context.fillStyle = "#35200f";
   context.fillRect(x, y, TILE_SIZE * s, TILE_SIZE * s);
-  context.fillStyle = variant === 0 ? "#88df67" : variant === 1 ? "#74d45d" : "#7fdb67";
+  context.fillStyle = variant === 0 ? "#79d95f" : variant === 1 ? "#67c957" : "#84e16d";
   context.fillRect(x, y, TILE_SIZE * s, 4 * s);
-  context.fillStyle = "#b8fb86";
+  context.fillStyle = "#c8ff98";
   context.fillRect(x, y + 1 * s, TILE_SIZE * s, 1 * s);
-  context.fillStyle = variant === 2 ? "#9b6634" : "#8a592f";
-  context.fillRect(x + 2 * s, y + 6 * s, 12 * s, 4 * s);
-  context.fillStyle = "#6d421f";
-  context.fillRect(x + 3 * s, y + 10 * s, 10 * s, 3 * s);
-  context.fillStyle = "#3f2514";
-  context.fillRect(x + 5 * s, y + 13 * s, 4 * s, 2 * s);
+  context.fillStyle = variant === 2 ? "#8f5b2f" : "#78492a";
+  context.fillRect(x + 2 * s, y + 5 * s, 12 * s, 4 * s);
+  context.fillStyle = "#5c351b";
+  context.fillRect(x + 3 * s, y + 9 * s, 10 * s, 3 * s);
+  context.fillStyle = "#402511";
+  context.fillRect(x + 5 * s, y + 12 * s, 4 * s, 2 * s);
   if (variant !== 3) {
     context.fillStyle = "rgba(255, 255, 255, 0.08)";
     context.fillRect(x + 10 * s, y + 8 * s, 2 * s, 2 * s);
   }
+  context.fillStyle = "rgba(18, 54, 14, 0.18)";
+  context.fillRect(x + 1 * s, y + 10 * s, 14 * s, 4 * s);
 }
 
 function drawPlatformTile(x, y, tileX) {
   const s = displayScale;
   const variant = tileX % 3;
-  context.fillStyle = "#2f4db7";
+  context.fillStyle = "#2241a1";
   context.fillRect(x, y, TILE_SIZE * s, TILE_SIZE * s);
-  context.fillStyle = variant === 0 ? "#8de6ff" : "#7dd8ff";
+  context.fillStyle = variant === 0 ? "#93eaff" : "#6ccff3";
   context.fillRect(x, y, TILE_SIZE * s, 3 * s);
-  context.fillStyle = "#edf9ff";
+  context.fillStyle = "#f5fdff";
   context.fillRect(x + 2 * s, y + 4 * s, 12 * s, 2 * s);
-  context.fillStyle = variant === 1 ? "#2751a8" : "#24439a";
+  context.fillStyle = variant === 1 ? "#1f4698" : "#1c397f";
   context.fillRect(x + 2 * s, y + 9 * s, 12 * s, 3 * s);
-  context.fillStyle = "#1a306c";
+  context.fillStyle = "#132759";
   context.fillRect(x + 1 * s, y + 13 * s, 14 * s, 2 * s);
-  context.fillStyle = "#6a4a22";
+  context.fillStyle = "#6f552c";
   context.fillRect(x + 5 * s, y + 12 * s, 2 * s, 2 * s);
-  context.fillStyle = "rgba(141, 245, 110, 0.28)";
+  context.fillStyle = "rgba(141, 245, 110, 0.34)";
   context.fillRect(x + 1 * s, y + 2 * s, 3 * s, 2 * s);
   context.fillRect(x + 11 * s, y + 2 * s, 3 * s, 2 * s);
+  context.fillStyle = "rgba(255, 255, 255, 0.08)";
+  context.fillRect(x + 7 * s, y + 6 * s, 2 * s, 2 * s);
 }
 
 function drawHazards() {
@@ -1442,13 +1449,13 @@ function drawSpikeCluster(x, y, width) {
     const bodyHeight = 12 * displayScale;
     context.fillStyle = "#5c1828";
     context.fillRect(spikeX, y + 8 * displayScale, bodyWidth, bodyHeight);
-    context.fillStyle = "#a82f45";
+    context.fillStyle = "#b33a51";
     context.fillRect(spikeX + 1 * displayScale, y + 7 * displayScale, bodyWidth - 2 * displayScale, 2 * displayScale);
-    context.fillStyle = "#ff8f64";
+    context.fillStyle = "#ff9b67";
     context.fillRect(spikeX + 2 * displayScale, y + 4 * displayScale, bodyWidth - 4 * displayScale, 4 * displayScale);
-    context.fillStyle = "#ffd18c";
+    context.fillStyle = "#ffd79e";
     context.fillRect(spikeX + 3 * displayScale, y + 1 * displayScale, bodyWidth - 6 * displayScale, 4 * displayScale);
-    context.fillStyle = "#fff3bf";
+    context.fillStyle = "#fff6cb";
     context.fillRect(spikeX + 4 * displayScale, y, bodyWidth - 8 * displayScale, 2 * displayScale);
   }
 }
@@ -1473,7 +1480,7 @@ function drawCollectibles() {
 
 function drawBambooCoin(x, y) {
   const s = displayScale;
-  context.fillStyle = "rgba(141, 245, 110, 0.14)";
+  context.fillStyle = "rgba(141, 245, 110, 0.16)";
   context.fillRect(x, y + 1 * s, 14 * s, 14 * s);
   context.fillStyle = "#204d22";
   context.fillRect(x + 5 * s, y + 1 * s, 4 * s, 12 * s);
@@ -1488,11 +1495,13 @@ function drawBambooCoin(x, y) {
   context.fillRect(x + 7 * s, y + 9 * s, 3 * s, 2 * s);
   context.fillStyle = "#f7ffd4";
   context.fillRect(x + 6 * s, y + 1 * s, 2 * s, 2 * s);
+  context.fillStyle = "rgba(255, 255, 255, 0.55)";
+  context.fillRect(x + 3 * s, y + 3 * s, 1 * s, 1 * s);
 }
 
 function drawLeafToken(x, y) {
   const s = displayScale;
-  context.fillStyle = "rgba(255, 213, 106, 0.14)";
+  context.fillStyle = "rgba(255, 213, 106, 0.16)";
   context.fillRect(x, y, 12 * s, 12 * s);
   context.fillStyle = "#1f6f55";
   context.fillRect(x + 5 * s, y + 1 * s, 2 * s, 10 * s);
@@ -1502,6 +1511,8 @@ function drawLeafToken(x, y) {
   context.fillRect(x + 3 * s, y + 3 * s, 6 * s, 6 * s);
   context.fillStyle = "#f3ffb4";
   context.fillRect(x + 5 * s, y + 4 * s, 2 * s, 2 * s);
+  context.fillStyle = "rgba(255, 255, 255, 0.55)";
+  context.fillRect(x + 2 * s, y + 2 * s, 1 * s, 1 * s);
 }
 
 function drawCheckpoints() {
@@ -1514,13 +1525,13 @@ function drawCheckpoints() {
 
 function drawCheckpointPole(x, y, activated) {
   const s = displayScale;
-  context.fillStyle = "#4c2f18";
+  context.fillStyle = "#4a3119";
   context.fillRect(x + 6 * s, y, 4 * s, 34 * s);
   context.fillStyle = activated ? "#66e6ff" : "#ffd56a";
   context.fillRect(x + 2 * s, y + 4 * s, 14 * s, 8 * s);
   context.fillStyle = activated ? "#d8fbff" : "#fff1bf";
   context.fillRect(x + 4 * s, y + 6 * s, 10 * s, 4 * s);
-  context.fillStyle = "#e5b86c";
+  context.fillStyle = "#cfa25d";
   context.fillRect(x + 6 * s, y, 4 * s, 34 * s);
   context.fillStyle = activated ? "rgba(102, 230, 255, 0.18)" : "rgba(255, 213, 106, 0.16)";
   context.fillRect(x + 1 * s, y + 2 * s, 16 * s, 12 * s);
@@ -1530,6 +1541,7 @@ function drawGoal() {
   const screenX = toScreenX(level.goal.x);
   const screenY = toScreenY(level.goal.y);
   const s = displayScale;
+  const sway = Math.sin(game.time * 5.5) * 2 * s;
 
   context.fillStyle = "#5a381b";
   context.fillRect(screenX, screenY, 4 * s, 50 * s);
@@ -1537,11 +1549,11 @@ function drawGoal() {
   context.fillStyle = "#f7d761";
   context.fillRect(screenX - 2 * s, screenY + 3 * s, 28 * s, 6 * s);
   context.fillStyle = "#65e2ff";
-  context.fillRect(screenX + 5 * s, screenY + 12 * s, 14 * s, 10 * s);
+  context.fillRect(screenX + 5 * s + sway, screenY + 12 * s, 14 * s, 10 * s);
   context.fillStyle = "#8df56e";
-  context.fillRect(screenX + 7 * s, screenY + 4 * s, 10 * s, 6 * s);
+  context.fillRect(screenX + 7 * s + sway, screenY + 4 * s, 10 * s, 6 * s);
   context.fillStyle = "#f9fbff";
-  context.fillRect(screenX + 8 * s, screenY + 16 * s, 8 * s, 18 * s);
+  context.fillRect(screenX + 8 * s + sway, screenY + 16 * s, 8 * s, 18 * s);
   context.fillStyle = "rgba(255, 213, 106, 0.14)";
   context.fillRect(screenX - 3 * s, screenY + 1 * s, 30 * s, 22 * s);
 }
@@ -1568,13 +1580,13 @@ function drawEnemySprite(x, y, facing, frame) {
     context.scale(-1, 1);
   }
 
-  context.fillStyle = "#3d1720";
+  context.fillStyle = "#31151e";
   context.fillRect(1 * s, 4 * s, 12 * s, 7 * s);
-  context.fillStyle = "#ff7b73";
+  context.fillStyle = "#ff8075";
   context.fillRect(2 * s, 5 * s, 10 * s, 5 * s);
-  context.fillStyle = "#ffb073";
+  context.fillStyle = "#ffb87a";
   context.fillRect(3 * s, 6 * s, 8 * s, 3 * s);
-  context.fillStyle = "#ffdba1";
+  context.fillStyle = "#ffe0ab";
   context.fillRect(5 * s, 4 * s, 4 * s, 2 * s);
   context.fillStyle = "#f5fbff";
   context.fillRect(4 * s, 5 * s, 2 * s, 2 * s);
@@ -1598,6 +1610,7 @@ function drawPlayerSprite() {
   const walking = player.onGround && Math.abs(player.vx) > 12;
   const frame = !player.onGround ? 3 : walking ? (Math.floor(game.time * 12) % 2) + 1 : 0;
   const s = displayScale;
+  const landSquash = player.landTimer > 0 ? 1 + player.landTimer * 0.08 : 0;
 
   context.save();
   if (player.invincible > 0 && Math.floor(game.time * 20) % 2 === 0) {
@@ -1612,102 +1625,110 @@ function drawPlayerSprite() {
 
   if (player.onGround) {
     context.fillStyle = "rgba(11, 20, 36, 0.22)";
-    context.fillRect(8 * s, 29 * s, 14 * s, 3 * s);
+    context.fillRect(7 * s, 30 * s, 16 * s, 3 * s);
   }
 
-  drawPandaSprite(frame);
+  drawPandaSprite(frame, landSquash);
   context.restore();
 }
 
-function drawPandaSprite(frame) {
+function drawPandaSprite(frame, landSquash) {
   const s = displayScale;
   const block = (x, y, width, height, color) => {
     context.fillStyle = color;
     context.fillRect(x * s, y * s, width * s, height * s);
   };
 
-  const hop = frame === 3 ? -2 : 0;
-  const step = frame === 1 ? 1 : frame === 2 ? -1 : 0;
-  const armSwing = frame === 3 ? -1 : step;
+  const bob = frame === 3 ? -2 : player.landTimer > 0 ? -1 : 0;
+  const tailWag = frame === 3 ? -1 : frame === 1 ? 1 : frame === 2 ? -1 : Math.round(Math.sin(game.time * 6) * 0.5);
+  const legOffset = frame === 1 ? 1 : frame === 2 ? -1 : 0;
+  const armOffset = frame === 3 ? -1 : legOffset;
+  const landShift = landSquash > 0 ? 1 : 0;
 
-  block(9, 2 + hop, 3, 2, "#0f2344");
-  block(11, 1 + hop, 8, 9, "#0f2344");
-  block(9, 1 + hop, 13, 12, "#0f2344");
-  block(8, 3 + hop, 15, 13, "#0f2344");
-  block(11, 3 + hop, 9, 9, "#4ca6ff");
-  block(12, 4 + hop, 7, 7, "#79dbff");
-  block(13, 5 + hop, 5, 5, "#baf7ff");
-  block(14, 6 + hop, 3, 3, "#f8fdff");
+  // Tail
+  block(22 + tailWag, 16 + bob, 8, 8, "#0f2344");
+  block(23 + tailWag, 17 + bob, 6, 6, "#3568ad");
+  block(24 + tailWag, 18 + bob, 4, 4, "#66c8ff");
+  block(25 + tailWag, 19 + bob, 2, 2, "#d8fbff");
+  block(20 + tailWag, 18 + bob, 4, 4, "#0f2344");
+  block(21 + tailWag, 19 + bob, 2, 2, "#2f63a7");
 
-  block(9, 0 + hop, 4, 4, "#0f2344");
-  block(18, 0 + hop, 4, 4, "#0f2344");
-  block(10, 1 + hop, 2, 2, "#4ca6ff");
-  block(19, 1 + hop, 2, 2, "#4ca6ff");
-  block(10, 1 + hop, 1, 1, "#d8fbff");
-  block(19, 1 + hop, 1, 1, "#d8fbff");
+  // Back leg and body shadow
+  block(17, 22 + bob, 5, 8, "#0f2344");
+  block(18, 23 + bob, 3, 7, "#274f8c");
+  block(19, 24 + bob, 2, 5, "#66c8ff");
+  block(18, 29 + bob, 4, 2, "#16325e");
 
-  block(7, 8 + hop, 11, 13, "#0f2344");
-  block(8, 9 + hop, 9, 11, "#2f63a7");
-  block(9, 10 + hop, 7, 9, "#4ca6ff");
-  block(10, 11 + hop, 5, 6, "#8fe8ff");
-  block(11, 12 + hop, 3, 3, "#d8fbff");
-  block(10, 14 + hop, 1, 1, "#091224");
-  block(13, 14 + hop, 1, 1, "#091224");
-  block(11, 15 + hop, 3, 1, "#091224");
+  // Body
+  block(8, 11 + bob + landShift, 14, 14 - landShift, "#0f2344");
+  block(9, 12 + bob + landShift, 12, 12 - landShift, "#3568ad");
+  block(10, 13 + bob + landShift, 10, 10 - landShift, "#4ea7ff");
+  block(11, 14 + bob + landShift, 8, 8 - landShift, "#79dbff");
+  block(12, 15 + bob + landShift, 6, 6 - landShift, "#baf7ff");
+  block(13, 16 + bob + landShift, 4, 4, "#f8fdff");
+  block(11, 24 + bob + landShift, 9, 2, "#16325e");
+  block(10, 22 + bob + landShift, 2, 4, "#baf7ff");
+  block(15, 22 + bob + landShift, 2, 4, "#baf7ff");
 
-  block(4, 11 + hop, 7, 14, "#0f2344");
-  block(5, 12 + hop, 5, 12, "#3a6fb4");
-  block(6, 13 + hop, 3, 9, "#66c8ff");
-  block(7, 14 + hop, 2, 5, "#baf7ff");
-  block(5, 18 + hop, 5, 2, "#16325e");
-  block(3, 10 + hop, 4, 5, "#0f2344");
-  block(2, 12 + hop, 3, 7, "#16325e");
-  block(1, 14 + hop, 4, 4, "#4ea7ff");
-  block(2, 15 + hop, 5, 6, "#79dbff");
-  block(4, 16 + hop, 4, 5, "#baf7ff");
-  block(6, 17 + hop, 3, 3, "#f8fdff");
-  block(1, 18 + hop, 3, 4, "#16325e");
-  block(0, 19 + hop, 2, 4, "#0f2344");
-  block(5, 10 + hop, 3, 2, "#66c8ff");
+  // Chest and front shoulder
+  block(5, 13 + bob + landShift, 6, 10 - landShift, "#0f2344");
+  block(6, 14 + bob + landShift, 4, 8 - landShift, "#3a6fb4");
+  block(7, 15 + bob + landShift, 3, 6 - landShift, "#66c8ff");
+  block(8, 16 + bob + landShift, 2, 4 - landShift, "#baf7ff");
 
-  block(20, 11 + hop, 4, 4, "#0f2344");
-  block(21, 12 + hop, 3, 3, "#4ea7ff");
-  block(22, 13 + hop, 2, 2, "#8fe8ff");
-  block(23, 14 + hop, 1, 1, "#f8fdff");
+  // Head
+  block(9, 1 + bob, 14, 12, "#0f2344");
+  block(10, 2 + bob, 12, 10, "#3568ad");
+  block(11, 3 + bob, 10, 8, "#4ea7ff");
+  block(12, 4 + bob, 8, 6, "#79dbff");
+  block(13, 5 + bob, 6, 4, "#baf7ff");
+  block(14, 6 + bob, 4, 2, "#f8fdff");
+  block(11, 8 + bob, 2, 2, "#091224");
+  block(17, 8 + bob, 2, 2, "#091224");
+  block(14, 9 + bob, 2, 1, "#091224");
+  block(13, 7 + bob, 1, 1, "#d8fbff");
+  block(18, 7 + bob, 1, 1, "#d8fbff");
 
-  block(19, 15 + hop, 4, 8, "#0f2344");
-  block(20, 16 + hop, 3, 7, "#2f63a7");
-  block(21, 17 + hop, 2, 5, "#66c8ff");
-  block(22, 18 + hop, 1, 3, "#baf7ff");
-  block(20, 23 + hop, 4, 2, "#16325e");
+  // Ears
+  block(10, 0 + bob, 4, 4, "#0f2344");
+  block(18, 0 + bob, 4, 4, "#0f2344");
+  block(11, 1 + bob, 2, 2, "#4ea7ff");
+  block(19, 1 + bob, 2, 2, "#4ea7ff");
+  block(11, 1 + bob, 1, 1, "#d8fbff");
+  block(19, 1 + bob, 1, 1, "#d8fbff");
 
+  // Face highlight
+  block(12, 5 + bob, 7, 3, "#eafcff");
+  block(13, 6 + bob, 5, 2, "#ffffff");
+
+  // Front leg
   if (frame === 3) {
-    block(12, 18 + hop, 3, 5, "#0f2344");
-    block(15, 18 + hop, 3, 5, "#0f2344");
-    block(10, 19 + hop, 4, 3, "#66c8ff");
-    block(15, 19 + hop, 4, 3, "#66c8ff");
-    block(11, 21 + hop, 2, 3, "#f8fdff");
-    block(16, 21 + hop, 2, 3, "#f8fdff");
+    block(11, 20 + bob, 4, 5, "#0f2344");
+    block(15, 20 + bob, 4, 5, "#0f2344");
+    block(10, 21 + bob, 4, 3, "#66c8ff");
+    block(15, 21 + bob, 4, 3, "#66c8ff");
+    block(11, 23 + bob, 2, 3, "#f8fdff");
+    block(16, 23 + bob, 2, 3, "#f8fdff");
   } else {
-    block(11, 19 + hop, 3, 5, "#0f2344");
-    block(15, 19 + hop, 3, 5, "#0f2344");
-    block(12, 20 + hop, 2, 4, "#66c8ff");
-    block(16, 20 + hop, 2, 4, "#66c8ff");
-    block(12, 23 + hop, 2, 2, "#f8fdff");
-    block(16, 23 + hop, 2, 2, "#f8fdff");
+    block(10, 21 + bob + legOffset, 4, 6, "#0f2344");
+    block(14, 21 + bob - legOffset, 4, 6, "#0f2344");
+    block(11, 22 + bob + legOffset, 2, 4, "#66c8ff");
+    block(15, 22 + bob - legOffset, 2, 4, "#66c8ff");
+    block(11, 26 + bob + legOffset, 2, 2, "#f8fdff");
+    block(15, 26 + bob - legOffset, 2, 2, "#f8fdff");
   }
 
-  block(23, 20 + hop, 4, 2, "#0f2344");
-  block(24, 21 + hop, 2, 2, "#4ea7ff");
-  block(22, 22 + hop, 4, 2, "#16325e");
-  block(3 + armSwing, 20 + hop, 3, 3, "#0f2344");
-  block(4 + armSwing, 21 + hop, 2, 2, "#4ea7ff");
-  block(24 - armSwing, 20 + hop, 3, 3, "#0f2344");
-  block(25 - armSwing, 21 + hop, 2, 2, "#4ea7ff");
-  block(8, 28 + hop, 4, 2, "#16325e");
-  block(16, 28 + hop, 4, 2, "#16325e");
-  block(9, 27 + hop, 3, 2, "#4ea7ff");
-  block(17, 27 + hop, 3, 2, "#4ea7ff");
+  // Arms
+  block(4 + armOffset, 17 + bob, 4, 4, "#0f2344");
+  block(5 + armOffset, 18 + bob, 2, 2, "#4ea7ff");
+  block(23 - armOffset, 17 + bob, 4, 4, "#0f2344");
+  block(24 - armOffset, 18 + bob, 2, 2, "#4ea7ff");
+
+  // Small outline accents to keep the silhouette crisp on mobile
+  block(8, 10 + bob, 1, 1, "#16325e");
+  block(21, 10 + bob, 1, 1, "#16325e");
+  block(3, 16 + bob, 1, 1, "#16325e");
+  block(26, 16 + bob, 1, 1, "#16325e");
 }
 
 function drawEffects() {
@@ -1959,14 +1980,6 @@ levelButtons.forEach((button) => {
     const levelIndex = Number(button.dataset.level);
     startLevel(levelIndex);
   });
-});
-
-restartButton.addEventListener("click", () => {
-  if (game.mode === "play") {
-    restartCurrentLevel();
-  } else {
-    showMenuScreen();
-  }
 });
 
 pauseButton.addEventListener("click", () => {

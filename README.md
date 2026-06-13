@@ -42,8 +42,8 @@ Następnie wejdź na `http://localhost:8080`.
 - side-scroller 2D z płynnym przewijaniem kamery
 - grawitacja, ruch lewo/prawo i skok z czułym buforem
 - kolizje z platformami, przeszkodami i checkpointami
-- większa niebieska panda czerwona narysowana programowo w canvasie
-- pixel-artowe kafelki, tło, platformy, skarby i efekty punktów
+- większa niebieska panda czerwona narysowana programowo w canvasie z prostymi animacjami ruchu, skoku i bezczynności
+- pixel-artowe kafelki, tło, platformy, skarby, efekty punktów i krótki feedback po trafieniu
 - bambusowe monety i listki jako kolekcjonowalne skarby
 - przeciwnicy patrolujący poziom
 - 3 życia i respawn po trafieniu
@@ -60,12 +60,12 @@ Następnie wejdź na `http://localhost:8080`.
 
 ## Wersja v0.4
 
-- większy kadr gry, mniej pustych marginesów i czytelniejszy HUD
-- dopracowany sprite bohatera z większym ogonem i wyraźniejszą sylwetką
-- mocniejszy kontrast tła, platform i przeszkód
-- krótkie efekty przy zbieraniu i otrzymywaniu obrażeń
-- mały przycisk pauzy dostępny w trakcie gry
-- porządki w kodzie i aktualizacja tekstów menu
+- większa i czytelniejsza scena gry z mocniej ograniczonym UI
+- dopracowany sprite bohatera z wyraźniejszą głową, uszami i puszystym ogonem
+- lepszy kontrast tła, platform, przeszkód i przedmiotów do zbierania
+- krótkie efekty przy zbieraniu, lądowaniu i otrzymywaniu obrażeń
+- wygodniejszy joystick i przycisk skoku na mobile
+- porządki w kodzie, usunięty martwy restart-button i odświeżone teksty menu
 
 ## Uwagi
 

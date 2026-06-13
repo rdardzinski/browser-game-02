@@ -1,8 +1,8 @@
 :root {
   color-scheme: dark;
-  --sky-1: #8cecff;
-  --sky-2: #5ab8ff;
-  --sky-3: #2d6ed6;
+  --sky-1: #9ef2ff;
+  --sky-2: #69c5ff;
+  --sky-3: #2e70d8;
   --panel: #122033;
   --panel-2: #1a2a46;
   --panel-3: #0b1220;
@@ -36,7 +36,7 @@ body {
     radial-gradient(circle at 18% 18%, rgba(255, 255, 255, 0.26), transparent 16%),
     radial-gradient(circle at 82% 12%, rgba(255, 239, 166, 0.24), transparent 18%),
     radial-gradient(circle at 50% 106%, rgba(4, 12, 32, 0.88), transparent 34%),
-    linear-gradient(180deg, #8cecff 0%, #5bbaff 34%, #2f71d5 64%, #16264d 100%);
+    linear-gradient(180deg, #98f0ff 0%, #69c2ff 34%, #326fd7 64%, #132445 100%);
 }
 
 body::before {
@@ -66,7 +66,7 @@ button {
 .app-shell {
   width: 100%;
   height: 100dvh;
-  padding: clamp(2px, 0.35vw, 6px);
+  padding: 0;
 }
 
 .screen {
@@ -88,9 +88,9 @@ button {
 .hud-strip {
   position: absolute;
   z-index: 4;
-  top: calc(6px + env(safe-area-inset-top));
-  left: calc(6px + env(safe-area-inset-left));
-  right: calc(6px + env(safe-area-inset-right));
+  top: calc(4px + env(safe-area-inset-top));
+  left: calc(4px + env(safe-area-inset-left));
+  right: calc(4px + env(safe-area-inset-right));
   display: flex;
   align-items: center;
   justify-content: flex-start;
@@ -100,8 +100,8 @@ button {
 }
 
 .hud-chip {
-  min-width: 74px;
-  padding: 7px 9px;
+  min-width: 70px;
+  padding: 6px 8px;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 13px;
   background:
@@ -113,7 +113,7 @@ button {
 .hud-chip span {
   display: block;
   color: var(--muted);
-  font-size: 0.62rem;
+  font-size: 0.6rem;
   font-weight: 800;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -123,7 +123,7 @@ button {
   display: block;
   margin-top: 2px;
   color: var(--accent);
-  font-size: 1.02rem;
+  font-size: 0.98rem;
   line-height: 1;
 }
 
@@ -134,7 +134,6 @@ button {
   pointer-events: auto;
 }
 
-.restart-button,
 .icon-button,
 .secondary-button,
 #startButton,
@@ -151,15 +150,10 @@ button {
     background-color 120ms ease;
 }
 
-.restart-button,
 .icon-button {
   border: 1px solid rgba(6, 14, 26, 0.24);
   color: #1d2640;
   box-shadow: 0 12px 24px rgba(3, 8, 23, 0.16);
-}
-
-.restart-button {
-  background: linear-gradient(180deg, #fff8de, #f0ca72);
 }
 
 .icon-button {
@@ -167,15 +161,14 @@ button {
 }
 
 .pause-button {
-  min-width: 40px;
-  min-height: 40px;
+  min-width: 38px;
+  min-height: 38px;
   padding: 0;
   border-radius: 14px;
   font-size: 0.9rem;
   line-height: 1;
 }
 
-.restart-button:hover,
 .icon-button:hover,
 #startButton:hover,
 .secondary-button:hover,
@@ -184,7 +177,6 @@ button {
   filter: brightness(1.03);
 }
 
-.restart-button:active,
 .icon-button:active,
 #startButton:active,
 .secondary-button:active,
@@ -192,7 +184,6 @@ button {
   transform: translateY(1px);
 }
 
-.restart-button:focus-visible,
 .icon-button:focus-visible,
 #startButton:focus-visible,
 .secondary-button:focus-visible,
@@ -213,11 +204,11 @@ button {
 .board-wrap {
   position: relative;
   overflow: hidden;
-  border: 2px solid rgba(10, 16, 28, 0.88);
-  border-radius: 18px;
-  background: #68c6ff;
+  border: 2px solid rgba(10, 16, 28, 0.92);
+  border-radius: 16px;
+  background: #5fc0fb;
   box-shadow:
-    0 24px 60px var(--shadow),
+    0 24px 60px rgba(2, 8, 20, 0.38),
     inset 0 1px 0 rgba(255, 255, 255, 0.16);
   image-rendering: pixelated;
   max-width: 100%;
@@ -231,7 +222,7 @@ canvas {
   user-select: none;
   touch-action: none;
   image-rendering: pixelated;
-  background: #68c6ff;
+  background: #5fc0fb;
 }
 
 .overlay {
@@ -251,10 +242,10 @@ canvas {
 }
 
 .overlay-card {
-  width: min(100%, 430px);
+  width: min(100%, 406px);
   max-height: calc(100% - 12px);
   overflow: auto;
-  padding: 16px;
+  padding: 15px;
   border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 22px;
   background:
@@ -293,7 +284,7 @@ canvas {
 }
 
 .overlay h2 {
-  font-size: clamp(1.3rem, 4.2vw, 1.95rem);
+  font-size: clamp(1.22rem, 4vw, 1.9rem);
   line-height: 1.05;
 }
 
@@ -416,18 +407,18 @@ canvas {
   position: absolute;
   left: 0;
   right: 0;
-  bottom: calc(6px + env(safe-area-inset-bottom));
+  bottom: calc(4px + env(safe-area-inset-bottom));
   display: none;
   align-items: flex-end;
   justify-content: space-between;
-  gap: 10px;
-  padding: 0 clamp(8px, 1.6vw, 18px);
+  gap: 8px;
+  padding: 0 clamp(6px, 1.2vw, 14px);
   pointer-events: none;
-  z-index: 3;
+  z-index: 4;
 }
 
 .joystick-shell {
-  width: clamp(146px, 32vw, 224px);
+  width: clamp(128px, 28vw, 196px);
   aspect-ratio: 1;
   pointer-events: none;
 }
@@ -443,7 +434,7 @@ canvas {
   background:
     radial-gradient(circle at 50% 45%, rgba(255, 255, 255, 0.16), transparent 34%),
     linear-gradient(180deg, rgba(22, 35, 56, 0.82), rgba(8, 14, 24, 0.9));
-  box-shadow: 0 14px 28px rgba(3, 8, 23, 0.25);
+  box-shadow: 0 12px 24px rgba(3, 8, 23, 0.26);
   pointer-events: auto;
   touch-action: none;
 }
@@ -474,8 +465,8 @@ canvas {
 }
 
 .control {
-  min-height: clamp(118px, 25vw, 190px);
-  min-width: clamp(118px, 25vw, 190px);
+  min-height: clamp(104px, 22vw, 160px);
+  min-width: clamp(104px, 22vw, 160px);
   border: 1px solid rgba(6, 14, 26, 0.25);
   background:
     radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.55), transparent 28%),
@@ -493,13 +484,9 @@ canvas {
 }
 
 .control-jump {
-  border-radius: 30px;
-  padding: 16px 22px;
+  border-radius: 28px;
+  padding: 14px 20px;
   letter-spacing: 0.08em;
-}
-
-.legacy-actions {
-  display: none;
 }
 
 [hidden] {
@@ -549,17 +536,13 @@ canvas {
 }
 
 @media (max-width: 560px) {
-  .app-shell {
-    padding: 4px;
-  }
-
   .hud-chip {
-    min-width: 72px;
-    padding: 7px 8px;
+    min-width: 66px;
+    padding: 6px 7px;
   }
 
   .hud-chip strong {
-    font-size: 0.98rem;
+    font-size: 0.94rem;
   }
 
   .overlay-card {
@@ -567,16 +550,16 @@ canvas {
   }
 
   .touch-controls {
-    gap: 8px;
+    gap: 6px;
     padding: 0 4px;
   }
 
   .joystick-shell {
-    width: clamp(118px, 31vw, 160px);
+    width: clamp(116px, 30vw, 156px);
   }
 
   .control {
-    min-width: clamp(104px, 28vw, 148px);
-    min-height: clamp(104px, 28vw, 148px);
+    min-width: clamp(96px, 26vw, 140px);
+    min-height: clamp(96px, 26vw, 140px);
   }
 }
