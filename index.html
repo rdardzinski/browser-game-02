@@ -35,6 +35,14 @@
               <span>Skarby</span>
               <strong id="collectibles">0/0</strong>
             </div>
+            <div class="hud-chip">
+              <span>Najlepszy</span>
+              <strong id="bestScore">0</strong>
+            </div>
+            <div class="hud-chip">
+              <span>Poziom</span>
+              <strong id="levelIndicator">1/2</strong>
+            </div>
           </div>
 
           <button id="restartButton" type="button" class="restart-button">
@@ -59,7 +67,7 @@
                   przeciwników oraz przeszkody i dotrzyj do flagi na końcu
                   poziomu.
                 </p>
-                <div class="start-steps" aria-label="Jak grać">
+                <div class="start-steps" id="overlayInstructions" aria-label="Jak grać">
                   <div class="start-step">
                     <strong>1</strong>
                     <span>Poruszaj się w lewo i prawo, żeby rozpędzić pandę.</span>
@@ -73,8 +81,28 @@
                     <span>Unikaj wrogów, nie wpadaj w pułapki i dotrzyj do mety.</span>
                   </div>
                 </div>
+                <div class="level-grid" id="levelGrid" hidden>
+                  <button type="button" class="level-card" data-level="0">
+                    <strong>Poziom 1</strong>
+                    <span>Bambusowy szlak</span>
+                    <small>Łagodny start z podstawami ruchu i kilkoma pułapkami.</small>
+                  </button>
+                  <button type="button" class="level-card" data-level="1">
+                    <strong>Poziom 2</strong>
+                    <span>Korony dżungli</span>
+                    <small>Gęstsze skoki, ciaśniejsze lądowania i więcej presji.</small>
+                  </button>
+                </div>
                 <p class="overlay-summary" id="overlaySummary" hidden></p>
-                <button id="startButton" type="button">Rozpocznij grę</button>
+                <div class="overlay-actions">
+                  <button id="startButton" type="button">Rozpocznij grę</button>
+                  <button id="levelSelectButton" type="button" class="secondary-button">
+                    Wybierz poziom
+                  </button>
+                  <button id="backButton" type="button" class="secondary-button" hidden>
+                    Wróć
+                  </button>
+                </div>
               </div>
             </div>
           </section>

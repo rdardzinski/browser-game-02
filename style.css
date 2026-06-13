@@ -28,6 +28,8 @@ body {
 body {
   margin: 0;
   overflow: hidden;
+  overscroll-behavior: none;
+  touch-action: none;
   color: var(--text);
   font-family: "Trebuchet MS", "Verdana", sans-serif;
   background:
@@ -232,6 +234,8 @@ canvas {
 
 .overlay-card {
   width: min(100%, 430px);
+  max-height: calc(100% - 16px);
+  overflow: auto;
   padding: 20px;
   border: 2px solid rgba(255, 255, 255, 0.15);
   border-radius: 24px;
@@ -284,6 +288,45 @@ canvas {
   text-align: left;
 }
 
+.level-grid {
+  display: grid;
+  gap: 10px;
+  margin: 16px 0 4px;
+}
+
+.level-card {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  padding: 14px 14px 13px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgba(141, 245, 110, 0.13), transparent),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.04));
+  color: var(--text);
+  text-align: left;
+}
+
+.level-card strong {
+  font-size: 1rem;
+  letter-spacing: 0.02em;
+}
+
+.level-card span {
+  color: var(--warm);
+  font-size: 0.84rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.level-card small {
+  color: #d7e3f5;
+  font-size: 0.88rem;
+  line-height: 1.35;
+}
+
 .start-step {
   display: grid;
   grid-template-columns: 30px 1fr;
@@ -322,13 +365,29 @@ canvas {
   font-weight: 700;
 }
 
-#startButton {
+#startButton,
+.secondary-button {
   width: 100%;
-  margin-top: 16px;
   border: 2px solid rgba(6, 14, 26, 0.28);
+  box-shadow: 0 12px 24px rgba(3, 8, 23, 0.18);
+}
+
+#startButton {
+  margin-top: 16px;
   background: linear-gradient(180deg, #8df56e, #48d75d);
   color: #0a2314;
-  box-shadow: 0 12px 24px rgba(3, 8, 23, 0.18);
+}
+
+.secondary-button {
+  margin-top: 10px;
+  background: linear-gradient(180deg, #f3f7ff, #bfd3ff);
+  color: #14223f;
+}
+
+.overlay-actions {
+  display: grid;
+  gap: 10px;
+  margin-top: 6px;
 }
 
 .controls {
@@ -413,5 +472,9 @@ canvas {
 
   .start-steps {
     margin: 14px 0;
+  }
+
+  .level-grid {
+    margin-top: 14px;
   }
 }

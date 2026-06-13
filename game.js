@@ -5,17 +5,24 @@ const context = canvas.getContext("2d");
 const scoreElement = document.getElementById("score");
 const livesElement = document.getElementById("lives");
 const collectiblesElement = document.getElementById("collectibles");
+const bestScoreElement = document.getElementById("bestScore");
+const levelIndicatorElement = document.getElementById("levelIndicator");
 const restartButton = document.getElementById("restartButton");
 const startButton = document.getElementById("startButton");
+const levelSelectButton = document.getElementById("levelSelectButton");
+const backButton = document.getElementById("backButton");
 const overlay = document.getElementById("overlay");
 const overlayBadge = document.getElementById("overlayBadge");
 const overlayKicker = document.getElementById("overlayKicker");
 const overlayTitle = document.getElementById("overlayTitle");
 const overlayText = document.getElementById("overlayText");
 const overlaySummary = document.getElementById("overlaySummary");
+const overlayInstructions = document.getElementById("overlayInstructions");
+const levelGrid = document.getElementById("levelGrid");
 const boardStage = document.querySelector(".board-stage");
 const boardWrap = document.querySelector(".board-wrap");
 const controlButtons = document.querySelectorAll("[data-action]");
+const levelButtons = document.querySelectorAll("[data-level]");
 
 const VIEW_WIDTH = 320;
 const VIEW_HEIGHT = 192;
@@ -35,6 +42,7 @@ const JUMP_CUT_MULTIPLIER = 1.65;
 const COYOTE_TIME = 0.09;
 const JUMP_BUFFER_TIME = 0.12;
 const INVINCIBLE_TIME = 1.1;
+const STORAGE_KEY_BEST_SCORE = "browser-game-02.bestScore";
 
 const TILE = {
   EMPTY: 0,
@@ -47,6 +55,31 @@ const ITEM_VALUES = {
   leaf: 10,
 };
 
+const LEVEL_DEFINITIONS = [
+  {
+    label: "Poziom 1",
+    subtitle: "Bambusowy szlak",
+    badge: "Ekran startowy",
+    kicker: "Rozgrzewka",
+    title: "Skocz po bambusowym szlaku",
+    text:
+      "Biegnij w prawo, zbieraj bambusowe monety i listki, omijaj przeciwników oraz przeszkody i dotrzyj do flagi na końcu poziomu.",
+    summary:
+      "Poziom 1 uczy rytmu skoków i podstaw walki. Poziom 2 dokłada ciaśniejsze lądowania i więcej presji.",
+  },
+  {
+    label: "Poziom 2",
+    subtitle: "Korony dżungli",
+    badge: "Ekran startowy",
+    kicker: "Drugi etap",
+    title: "Wejdź głębiej w dżunglę",
+    text:
+      "Drugi poziom wymaga bardziej precyzyjnych skoków, szybszych decyzji i uważniejszego zbierania skarbów.",
+    summary:
+      "Poziom 2 jest gęstszy i bardziej pionowy, ale nadal da się go przejść bez losowości i bez backtrackingu.",
+  },
+];
+
 const input = {
   left: false,
   right: false,
@@ -54,8 +87,26 @@ const input = {
   jumpQueued: false,
 };
 
+function loadBestScore() {
+  try {
+    const rawValue = window.localStorage.getItem(STORAGE_KEY_BEST_SCORE);
+    const parsedValue = Number(rawValue);
+    return Number.isFinite(parsedValue) && parsedValue > 0 ? parsedValue : 0;
+  } catch {
+    return 0;
+  }
+}
+
+function saveBestScore(score) {
+  try {
+    window.localStorage.setItem(STORAGE_KEY_BEST_SCORE, String(score));
+  } catch {
+    // LocalStorage can be unavailable in private or restricted contexts.
+  }
+}
+
 const game = {
-  mode: "title",
+  mode: "menu",
   score: 0,
   lives: 3,
   collected: 0,
@@ -64,9 +115,11 @@ const game = {
   respawnX: TILE_SIZE * 2,
   respawnY: WORLD_HEIGHT - TILE_SIZE * 2 - 4,
   checkpointLabel: "Początek",
+  currentLevelIndex: 0,
+  bestScore: loadBestScore(),
 };
 
-let level = createLevel();
+let level = createLevel(0);
 let player = createPlayer(level.spawn.x, level.spawn.y);
 let cameraX = 0;
 let displayScale = 1;
@@ -83,7 +136,211 @@ const clouds = [
   { x: 278, y: 22, width: 34, speed: 0.15 },
 ];
 
-function createLevel() {
+function updateBestScore() {
+  if (game.score > game.bestScore) {
+    game.bestScore = game.score;
+    saveBestScore(game.bestScore);
+  }
+}
+
+function updateRestartLabel() {
+  restartButton.textContent =
+    game.mode === "play" ? "Restart poziomu" : "Menu startowe";
+}
+
+function syncHud() {
+  updateBestScore();
+  scoreElement.textContent = String(game.score);
+  livesElement.textContent = String(game.lives);
+  collectiblesElement.textContent = `${game.collected}/${game.totalCollectibles}`;
+  bestScoreElement.textContent = String(game.bestScore);
+  const levelLabel =
+    game.mode === "menu" || game.mode === "level-select"
+      ? `1/${LEVEL_DEFINITIONS.length}`
+      : `${game.currentLevelIndex + 1}/${LEVEL_DEFINITIONS.length}`;
+  levelIndicatorElement.textContent = levelLabel;
+  updateRestartLabel();
+}
+
+function clearInput() {
+  input.left = false;
+  input.right = false;
+  input.jumpHeld = false;
+  input.jumpQueued = false;
+}
+
+function showOverlay({
+  badge,
+  kicker,
+  title,
+  text,
+  summary = "",
+  primaryLabel = "Rozpocznij grę",
+  secondaryLabel = "Wybierz poziom",
+  backLabel = "Wróć",
+  showInstructions = false,
+  showLevelGrid = false,
+  showPrimary = true,
+  showSecondary = true,
+  showBack = false,
+}) {
+  overlayBadge.textContent = badge;
+  overlayKicker.textContent = kicker;
+  overlayTitle.textContent = title;
+  overlayText.textContent = text;
+  startButton.textContent = primaryLabel;
+  levelSelectButton.textContent = secondaryLabel;
+  backButton.textContent = backLabel;
+  overlayInstructions.hidden = !showInstructions;
+  levelGrid.hidden = !showLevelGrid;
+  startButton.hidden = !showPrimary;
+  levelSelectButton.hidden = !showSecondary;
+  backButton.hidden = !showBack;
+  overlaySummary.hidden = summary.length === 0;
+  overlaySummary.textContent = summary;
+  overlay.hidden = false;
+}
+
+function hideOverlay() {
+  overlay.hidden = true;
+}
+
+function showMenuScreen() {
+  game.mode = "menu";
+  syncHud();
+  showOverlay({
+    badge: LEVEL_DEFINITIONS[0].badge,
+    kicker: LEVEL_DEFINITIONS[0].kicker,
+    title: LEVEL_DEFINITIONS[0].title,
+    text: LEVEL_DEFINITIONS[0].text,
+    summary: `Najlepszy wynik zapisany lokalnie: ${game.bestScore} pkt. Zacznij od poziomu 1 albo wybierz poziom 2 od razu.`,
+    primaryLabel: "Graj w poziom 1",
+    secondaryLabel: "Wybierz poziom",
+    showInstructions: true,
+    showLevelGrid: false,
+    showPrimary: true,
+    showSecondary: true,
+    showBack: false,
+  });
+}
+
+function showLevelSelectScreen() {
+  game.mode = "level-select";
+  syncHud();
+  showOverlay({
+    badge: "Wybór poziomu",
+    kicker: "Wskaż trasę",
+    title: "Wybierz poziom",
+    text:
+      "Poziom 1 jest łagodniejszy. Poziom 2 ma ciaśniejsze skoki i wymaga większej precyzji.",
+    summary: `Najlepszy wynik zapisany lokalnie: ${game.bestScore} pkt.`,
+    primaryLabel: "Wybierz poziom",
+    secondaryLabel: "Wybierz poziom",
+    backLabel: "Wróć",
+    showInstructions: false,
+    showLevelGrid: true,
+    showPrimary: false,
+    showSecondary: false,
+    showBack: true,
+  });
+}
+
+function showLevelClearScreen(nextLevelIndex) {
+  game.mode = "level-clear";
+  syncHud();
+  const nextLevel = LEVEL_DEFINITIONS[nextLevelIndex];
+  showOverlay({
+    badge: "Poziom ukończony",
+    kicker: `Etap ${game.currentLevelIndex + 1}/${LEVEL_DEFINITIONS.length}`,
+    title: `${LEVEL_DEFINITIONS[game.currentLevelIndex].label} zaliczony`,
+    text:
+      "Dobra robota. Możesz przejść do kolejnego poziomu albo wrócić do wyboru planszy.",
+    summary: `Wynik teraz: ${game.score} pkt. Skarby: ${game.collected}/${game.totalCollectibles}. Ostatni checkpoint: ${game.checkpointLabel}.`,
+    primaryLabel: nextLevel ? `Kontynuuj do ${nextLevel.label}` : "Zakończ",
+    secondaryLabel: "Wybierz poziom",
+    showInstructions: false,
+    showLevelGrid: false,
+    showPrimary: true,
+    showSecondary: true,
+    showBack: false,
+  });
+}
+
+function showGameOverScreen(reason) {
+  game.mode = "game-over";
+  syncHud();
+  showOverlay({
+    badge: "Game Over",
+    kicker: "Zabrakło żyć",
+    title: "Panda utknęła na szlaku",
+    text: reason || "Spróbuj ponownie i przejdź poziom czystszą linią skoków.",
+    summary: `Wynik: ${game.score} pkt. Skarby: ${game.collected}/${game.totalCollectibles}. Ostatni checkpoint: ${game.checkpointLabel}.`,
+    primaryLabel: "Zagraj ponownie",
+    secondaryLabel: "Wybierz poziom",
+    showInstructions: false,
+    showLevelGrid: false,
+    showPrimary: true,
+    showSecondary: true,
+    showBack: false,
+  });
+}
+
+function showVictoryScreen() {
+  game.mode = "victory";
+  game.score += game.lives * 100;
+  syncHud();
+  showOverlay({
+    badge: "Zwycięstwo",
+    kicker: "Oba poziomy ukończone",
+    title: "Błękitna panda dotarła do mety",
+    text: "Przeszedłeś cały zestaw poziomów, zebrałeś skarby i domknąłeś run bez utraty kontroli.",
+    summary: `Wynik końcowy: ${game.score} pkt. Najlepszy wynik: ${game.bestScore} pkt. Skarby: ${game.collected}/${game.totalCollectibles}.`,
+    primaryLabel: "Zagraj ponownie",
+    secondaryLabel: "Wybierz poziom",
+    showInstructions: false,
+    showLevelGrid: false,
+    showPrimary: true,
+    showSecondary: true,
+    showBack: false,
+  });
+}
+
+function loadLevel(levelIndex, { preserveProgress = false } = {}) {
+  level = createLevel(levelIndex);
+  player = createPlayer(level.spawn.x, level.spawn.y);
+  game.currentLevelIndex = levelIndex;
+  game.score = preserveProgress ? game.score : 0;
+  game.lives = preserveProgress ? game.lives : 3;
+  game.collected = 0;
+  game.totalCollectibles = level.collectibles.length;
+  game.time = 0;
+  game.respawnX = level.spawn.x;
+  game.respawnY = level.spawn.y;
+  game.checkpointLabel = "Początek";
+  cameraX = 0;
+  clearInput();
+  syncHud();
+}
+
+function startLevel(levelIndex) {
+  loadLevel(levelIndex, { preserveProgress: false });
+  game.mode = "play";
+  hideOverlay();
+  syncHud();
+}
+
+function continueToLevel(levelIndex) {
+  loadLevel(levelIndex, { preserveProgress: true });
+  game.mode = "play";
+  hideOverlay();
+  syncHud();
+}
+
+function restartCurrentLevel() {
+  startLevel(game.currentLevelIndex);
+}
+
+function createLevel(levelIndex = 0) {
   const tiles = Array.from({ length: LEVEL_HEIGHT_TILES }, () =>
     Array.from({ length: LEVEL_WIDTH_TILES }, () => TILE.EMPTY),
   );
@@ -167,63 +424,127 @@ function createLevel() {
 
   fillTiles(0, LEVEL_HEIGHT_TILES - 1, LEVEL_WIDTH_TILES, 1, TILE.SOLID);
 
-  [
-    [15, 3],
-    [31, 3],
-    [47, 3],
-    [63, 3],
-    [81, 4],
-    [103, 3],
-    [127, 4],
-    [151, 3],
-    [171, 3],
-  ].forEach(([start, width]) => carveHole(start, width));
+  if (levelIndex === 0) {
+    [
+      [15, 3],
+      [31, 3],
+      [47, 3],
+      [63, 3],
+      [81, 4],
+      [103, 3],
+      [127, 4],
+      [151, 3],
+      [171, 3],
+    ].forEach(([start, width]) => carveHole(start, width));
 
-  [
-    [8, 8, 5],
-    [20, 7, 5],
-    [34, 6, 5],
-    [50, 8, 5],
-    [67, 7, 4],
-    [84, 6, 5],
-    [102, 8, 5],
-    [120, 7, 5],
-    [140, 6, 5],
-    [162, 8, 5],
-  ].forEach(([x, y, width]) => fillTiles(x, y, width, 1, TILE.PLATFORM));
+    [
+      [8, 8, 5],
+      [20, 7, 5],
+      [34, 6, 5],
+      [50, 8, 5],
+      [67, 7, 4],
+      [84, 6, 5],
+      [102, 8, 5],
+      [120, 7, 5],
+      [140, 6, 5],
+      [162, 8, 5],
+    ].forEach(([x, y, width]) => fillTiles(x, y, width, 1, TILE.PLATFORM));
 
-  fillTiles(176, 10, 2, 2, TILE.PLATFORM);
-  fillTiles(178, 9, 2, 3, TILE.PLATFORM);
-  fillTiles(180, 8, 2, 4, TILE.PLATFORM);
-  fillTiles(182, 7, 2, 5, TILE.PLATFORM);
-  fillTiles(184, 6, 3, 6, TILE.PLATFORM);
-  fillTiles(187, 5, 4, 7, TILE.PLATFORM);
+    fillTiles(176, 10, 2, 2, TILE.PLATFORM);
+    fillTiles(178, 9, 2, 3, TILE.PLATFORM);
+    fillTiles(180, 8, 2, 4, TILE.PLATFORM);
+    fillTiles(182, 7, 2, 5, TILE.PLATFORM);
+    fillTiles(184, 6, 3, 6, TILE.PLATFORM);
+    fillTiles(187, 5, 4, 7, TILE.PLATFORM);
 
-  addCollectible(9 * TILE_SIZE + 1, 7 * TILE_SIZE - 15, "bamboo");
-  addCollectible(12 * TILE_SIZE + 1, 6 * TILE_SIZE - 15, "leaf");
-  addCollectible(22 * TILE_SIZE + 1, 6 * TILE_SIZE - 15, "bamboo");
-  addCollectible(25 * TILE_SIZE + 1, 5 * TILE_SIZE - 15, "leaf");
-  addCollectible(36 * TILE_SIZE + 1, 5 * TILE_SIZE - 15, "bamboo");
-  addCollectible(40 * TILE_SIZE + 1, 4 * TILE_SIZE - 15, "leaf");
-  addCollectible(52 * TILE_SIZE + 1, 7 * TILE_SIZE - 15, "bamboo");
-  addCollectible(56 * TILE_SIZE + 1, 6 * TILE_SIZE - 15, "leaf");
-  addCollectible(69 * TILE_SIZE + 1, 6 * TILE_SIZE - 15, "bamboo");
-  addCollectible(86 * TILE_SIZE + 1, 5 * TILE_SIZE - 15, "leaf");
-  addCollectible(103 * TILE_SIZE + 1, 7 * TILE_SIZE - 15, "bamboo");
-  addCollectible(123 * TILE_SIZE + 1, 6 * TILE_SIZE - 15, "leaf");
-  addCollectible(142 * TILE_SIZE + 1, 5 * TILE_SIZE - 15, "bamboo");
-  addCollectible(165 * TILE_SIZE + 1, 7 * TILE_SIZE - 15, "leaf");
-  addCollectible(181 * TILE_SIZE + 1, 8 * TILE_SIZE - 15, "bamboo");
-  addCollectible(188 * TILE_SIZE + 1, 5 * TILE_SIZE - 15, "leaf");
+    addCollectible(9 * TILE_SIZE + 1, 7 * TILE_SIZE - 15, "bamboo");
+    addCollectible(12 * TILE_SIZE + 1, 6 * TILE_SIZE - 15, "leaf");
+    addCollectible(22 * TILE_SIZE + 1, 6 * TILE_SIZE - 15, "bamboo");
+    addCollectible(25 * TILE_SIZE + 1, 5 * TILE_SIZE - 15, "leaf");
+    addCollectible(36 * TILE_SIZE + 1, 5 * TILE_SIZE - 15, "bamboo");
+    addCollectible(40 * TILE_SIZE + 1, 4 * TILE_SIZE - 15, "leaf");
+    addCollectible(52 * TILE_SIZE + 1, 7 * TILE_SIZE - 15, "bamboo");
+    addCollectible(56 * TILE_SIZE + 1, 6 * TILE_SIZE - 15, "leaf");
+    addCollectible(69 * TILE_SIZE + 1, 6 * TILE_SIZE - 15, "bamboo");
+    addCollectible(86 * TILE_SIZE + 1, 5 * TILE_SIZE - 15, "leaf");
+    addCollectible(103 * TILE_SIZE + 1, 7 * TILE_SIZE - 15, "bamboo");
+    addCollectible(123 * TILE_SIZE + 1, 6 * TILE_SIZE - 15, "leaf");
+    addCollectible(142 * TILE_SIZE + 1, 5 * TILE_SIZE - 15, "bamboo");
+    addCollectible(165 * TILE_SIZE + 1, 7 * TILE_SIZE - 15, "leaf");
+    addCollectible(181 * TILE_SIZE + 1, 8 * TILE_SIZE - 15, "bamboo");
+    addCollectible(188 * TILE_SIZE + 1, 5 * TILE_SIZE - 15, "leaf");
 
-  addEnemy(5 * TILE_SIZE, 11 * TILE_SIZE - 14, 3 * TILE_SIZE, 13 * TILE_SIZE, 40);
-  addEnemy(24 * TILE_SIZE, 11 * TILE_SIZE - 14, 21 * TILE_SIZE, 29 * TILE_SIZE, 44);
-  addEnemy(54 * TILE_SIZE, 11 * TILE_SIZE - 14, 50 * TILE_SIZE, 60 * TILE_SIZE, 40);
-  addEnemy(72 * TILE_SIZE, 7 * TILE_SIZE - 14, 68 * TILE_SIZE, 77 * TILE_SIZE, 34);
-  addEnemy(110 * TILE_SIZE, 8 * TILE_SIZE - 14, 103 * TILE_SIZE, 114 * TILE_SIZE, 34);
-  addEnemy(145 * TILE_SIZE, 6 * TILE_SIZE - 14, 141 * TILE_SIZE, 149 * TILE_SIZE, 32);
+    addEnemy(5 * TILE_SIZE, 11 * TILE_SIZE - 14, 3 * TILE_SIZE, 13 * TILE_SIZE, 40);
+    addEnemy(24 * TILE_SIZE, 11 * TILE_SIZE - 14, 21 * TILE_SIZE, 29 * TILE_SIZE, 44);
+    addEnemy(54 * TILE_SIZE, 11 * TILE_SIZE - 14, 50 * TILE_SIZE, 60 * TILE_SIZE, 40);
+    addEnemy(72 * TILE_SIZE, 7 * TILE_SIZE - 14, 68 * TILE_SIZE, 77 * TILE_SIZE, 34);
+    addEnemy(110 * TILE_SIZE, 8 * TILE_SIZE - 14, 103 * TILE_SIZE, 114 * TILE_SIZE, 34);
+    addEnemy(145 * TILE_SIZE, 6 * TILE_SIZE - 14, 141 * TILE_SIZE, 149 * TILE_SIZE, 32);
 
-  addCheckpoint(120 * TILE_SIZE + 2, 7 * TILE_SIZE - 34, "Checkpoint bambusowy");
+    addCheckpoint(120 * TILE_SIZE + 2, 7 * TILE_SIZE - 34, "Checkpoint bambusowy");
+  } else {
+    [
+      [16, 3],
+      [29, 4],
+      [43, 3],
+      [58, 3],
+      [74, 4],
+      [91, 3],
+      [109, 4],
+      [128, 3],
+      [146, 4],
+      [165, 3],
+    ].forEach(([start, width]) => carveHole(start, width));
+
+    [
+      [6, 8, 4],
+      [14, 7, 4],
+      [21, 6, 5],
+      [34, 7, 4],
+      [48, 6, 4],
+      [63, 5, 5],
+      [79, 6, 4],
+      [96, 7, 5],
+      [114, 6, 4],
+      [133, 5, 5],
+      [151, 6, 4],
+      [170, 7, 5],
+    ].forEach(([x, y, width]) => fillTiles(x, y, width, 1, TILE.PLATFORM));
+
+    fillTiles(176, 10, 2, 2, TILE.PLATFORM);
+    fillTiles(178, 9, 2, 3, TILE.PLATFORM);
+    fillTiles(180, 8, 2, 4, TILE.PLATFORM);
+    fillTiles(182, 7, 2, 5, TILE.PLATFORM);
+    fillTiles(184, 6, 2, 6, TILE.PLATFORM);
+    fillTiles(186, 5, 2, 7, TILE.PLATFORM);
+    fillTiles(188, 4, 2, 8, TILE.PLATFORM);
+
+    addCollectible(8 * TILE_SIZE + 1, 7 * TILE_SIZE - 15, "leaf");
+    addCollectible(18 * TILE_SIZE + 1, 6 * TILE_SIZE - 15, "bamboo");
+    addCollectible(26 * TILE_SIZE + 1, 5 * TILE_SIZE - 15, "leaf");
+    addCollectible(37 * TILE_SIZE + 1, 6 * TILE_SIZE - 15, "bamboo");
+    addCollectible(50 * TILE_SIZE + 1, 5 * TILE_SIZE - 15, "leaf");
+    addCollectible(66 * TILE_SIZE + 1, 4 * TILE_SIZE - 15, "bamboo");
+    addCollectible(82 * TILE_SIZE + 1, 5 * TILE_SIZE - 15, "leaf");
+    addCollectible(98 * TILE_SIZE + 1, 6 * TILE_SIZE - 15, "bamboo");
+    addCollectible(117 * TILE_SIZE + 1, 5 * TILE_SIZE - 15, "leaf");
+    addCollectible(136 * TILE_SIZE + 1, 4 * TILE_SIZE - 15, "bamboo");
+    addCollectible(152 * TILE_SIZE + 1, 5 * TILE_SIZE - 15, "leaf");
+    addCollectible(168 * TILE_SIZE + 1, 6 * TILE_SIZE - 15, "bamboo");
+    addCollectible(181 * TILE_SIZE + 1, 8 * TILE_SIZE - 15, "leaf");
+    addCollectible(188 * TILE_SIZE + 1, 4 * TILE_SIZE - 15, "bamboo");
+
+    addEnemy(7 * TILE_SIZE, 11 * TILE_SIZE - 14, 4 * TILE_SIZE, 13 * TILE_SIZE, 42);
+    addEnemy(31 * TILE_SIZE, 11 * TILE_SIZE - 14, 28 * TILE_SIZE, 37 * TILE_SIZE, 46);
+    addEnemy(55 * TILE_SIZE, 11 * TILE_SIZE - 14, 51 * TILE_SIZE, 62 * TILE_SIZE, 42);
+    addEnemy(84 * TILE_SIZE, 6 * TILE_SIZE - 14, 80 * TILE_SIZE, 90 * TILE_SIZE, 36);
+    addEnemy(112 * TILE_SIZE, 7 * TILE_SIZE - 14, 108 * TILE_SIZE, 118 * TILE_SIZE, 38);
+    addEnemy(144 * TILE_SIZE, 5 * TILE_SIZE - 14, 140 * TILE_SIZE, 150 * TILE_SIZE, 34);
+    addEnemy(172 * TILE_SIZE, 7 * TILE_SIZE - 14, 168 * TILE_SIZE, 178 * TILE_SIZE, 36);
+
+    addCheckpoint(96 * TILE_SIZE + 2, 7 * TILE_SIZE - 34, "Środek dżungli");
+    addCheckpoint(152 * TILE_SIZE + 2, 6 * TILE_SIZE - 34, "Zielony grzbiet");
+  }
 
   const goal = {
     x: 189 * TILE_SIZE,
@@ -264,95 +585,6 @@ function createPlayer(x, y) {
   };
 }
 
-function resetSession() {
-  level = createLevel();
-  player = createPlayer(level.spawn.x, level.spawn.y);
-  game.mode = "title";
-  game.score = 0;
-  game.lives = 3;
-  game.collected = 0;
-  game.totalCollectibles = level.collectibles.length;
-  game.time = 0;
-  game.respawnX = level.spawn.x;
-  game.respawnY = level.spawn.y;
-  game.checkpointLabel = "Początek";
-  cameraX = 0;
-  clearInput();
-  syncHud();
-}
-
-function clearInput() {
-  input.left = false;
-  input.right = false;
-  input.jumpHeld = false;
-  input.jumpQueued = false;
-}
-
-function syncHud() {
-  scoreElement.textContent = String(game.score);
-  livesElement.textContent = String(game.lives);
-  collectiblesElement.textContent = `${game.collected}/${game.totalCollectibles}`;
-}
-
-function showOverlay({ badge, kicker, title, text, summary = "", buttonLabel }) {
-  overlayBadge.textContent = badge;
-  overlayKicker.textContent = kicker;
-  overlayTitle.textContent = title;
-  overlayText.textContent = text;
-  startButton.textContent = buttonLabel;
-  overlaySummary.hidden = summary.length === 0;
-  overlaySummary.textContent = summary;
-  overlay.hidden = false;
-}
-
-function hideOverlay() {
-  overlay.hidden = true;
-}
-
-function showStartScreen() {
-  game.mode = "title";
-  showOverlay({
-    badge: "Ekran startowy",
-    kicker: "W drogę",
-    title: "Skacz po bambusowym szlaku",
-    text:
-      "Biegnij w prawo, zbieraj bambusowe monety i listki, omijaj przeciwników oraz przeszkody i dotrzyj do flagi na końcu poziomu.",
-    buttonLabel: "Rozpocznij grę",
-  });
-}
-
-function startGame() {
-  resetSession();
-  game.mode = "play";
-  hideOverlay();
-}
-
-function finishGameOver() {
-  game.mode = "over";
-  showOverlay({
-    badge: "Game Over",
-    kicker: "Zabrakło żyć",
-    title: "Panda utknęła na szlaku",
-    text: "Spróbuj ponownie i przejdź poziom czystszą linią skoków.",
-    summary: `Twój wynik: ${game.score} pkt. Zebrane skarby: ${game.collected}/${game.totalCollectibles}. Ostatni checkpoint: ${game.checkpointLabel}.`,
-    buttonLabel: "Zagraj ponownie",
-  });
-}
-
-function finishVictory() {
-  game.mode = "victory";
-  game.score += game.lives * 100;
-  syncHud();
-  showOverlay({
-    badge: "Zwycięstwo",
-    kicker: "Poziom ukończony",
-    title: "Błękitna panda dotarła do mety",
-    text: "Zebrałeś skarby, ominąłeś pułapki i dotarłeś do końca poziomu.",
-    summary: `Wynik końcowy: ${game.score} pkt. Skarby: ${game.collected}/${game.totalCollectibles}. Ostatni checkpoint: ${game.checkpointLabel}.`,
-    buttonLabel: "Zagraj ponownie",
-  });
-}
-
 function setRespawn(checkpoint) {
   game.respawnX = checkpoint.respawnX;
   game.respawnY = checkpoint.respawnY;
@@ -383,8 +615,9 @@ function takeDamage(reason) {
 
   if (game.lives <= 0) {
     game.lives = 0;
+    game.mode = "game-over";
     syncHud();
-    finishGameOver(reason);
+    showGameOverScreen(reason);
     return;
   }
 
@@ -594,7 +827,11 @@ function checkPlayerInteractions() {
   }
 
   if (rectsOverlap(player, level.goal)) {
-    finishVictory();
+    if (game.currentLevelIndex < LEVEL_DEFINITIONS.length - 1) {
+      showLevelClearScreen(game.currentLevelIndex + 1);
+    } else {
+      showVictoryScreen();
+    }
   }
 }
 
@@ -668,10 +905,11 @@ function update(dt) {
 function resizeCanvas() {
   const availableWidth = Math.floor(boardStage.clientWidth);
   const availableHeight = Math.floor(boardStage.clientHeight);
-  const scale = Math.max(
-    1,
-    Math.floor(Math.min(availableWidth / VIEW_WIDTH, availableHeight / VIEW_HEIGHT)),
+  const rawScale = Math.min(
+    availableWidth / VIEW_WIDTH,
+    availableHeight / VIEW_HEIGHT,
   );
+  const scale = rawScale < 1 ? Math.max(0.5, rawScale) : Math.floor(rawScale);
 
   displayScale = scale;
   cssWidth = VIEW_WIDTH * displayScale;
@@ -1146,17 +1384,13 @@ function step(timestamp) {
   requestAnimationFrame(step);
 }
 
-function handleKeyboardStart(event) {
-  if (event.code === "Space" || event.key === "Enter") {
-    event.preventDefault();
-    startGame();
-  }
-}
-
 document.addEventListener("keydown", (event) => {
   if (event.code === "Space" || event.key === "Enter") {
     if (game.mode !== "play") {
-      handleKeyboardStart(event);
+      event.preventDefault();
+      if (!startButton.hidden) {
+        startButton.click();
+      }
       return;
     }
 
@@ -1172,7 +1406,17 @@ document.addEventListener("keydown", (event) => {
 
   if (event.key === "r" || event.key === "R") {
     event.preventDefault();
-    startGame();
+    if (game.mode === "play") {
+      restartCurrentLevel();
+    } else {
+      showMenuScreen();
+    }
+    return;
+  }
+
+  if (event.key === "Escape" && game.mode !== "play") {
+    event.preventDefault();
+    showMenuScreen();
     return;
   }
 
@@ -1210,11 +1454,45 @@ document.addEventListener("keyup", (event) => {
 });
 
 startButton.addEventListener("click", () => {
-  startGame();
+  if (game.mode === "level-clear") {
+    continueToLevel(game.currentLevelIndex + 1);
+    return;
+  }
+
+  if (game.mode === "victory") {
+    startLevel(0);
+    return;
+  }
+
+  if (game.mode === "game-over") {
+    restartCurrentLevel();
+    return;
+  }
+
+  startLevel(0);
+});
+
+levelSelectButton.addEventListener("click", () => {
+  showLevelSelectScreen();
+});
+
+backButton.addEventListener("click", () => {
+  showMenuScreen();
+});
+
+levelButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    const levelIndex = Number(button.dataset.level);
+    startLevel(levelIndex);
+  });
 });
 
 restartButton.addEventListener("click", () => {
-  startGame();
+  if (game.mode === "play") {
+    restartCurrentLevel();
+  } else {
+    showMenuScreen();
+  }
 });
 
 controlButtons.forEach((button) => {
@@ -1260,7 +1538,7 @@ const resizeObserver = new ResizeObserver(() => {
 resizeObserver.observe(boardStage);
 window.addEventListener("resize", resizeCanvas);
 
-resetSession();
-showStartScreen();
+loadLevel(0);
+showMenuScreen();
 resizeCanvas();
 requestAnimationFrame(step);

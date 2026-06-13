@@ -1,6 +1,8 @@
 # Niebieska panda czerwona
 
 Pixel-artowa platformówka 2D napisana w HTML, CSS i czystym JavaScript.
+Wersja v0.2 dodaje ekran startowy, wybór poziomu, drugi poziom i zapis
+najlepszego wyniku.
 
 Gra działa lokalnie bez zewnętrznych bibliotek i assetów. Możesz otworzyć
 `index.html` bezpośrednio w przeglądarce albo uruchomić prosty serwer HTTP.
@@ -22,7 +24,8 @@ Następnie wejdź na `http://localhost:8080`.
 - `←` / `A` - ruch w lewo
 - `→` / `D` - ruch w prawo
 - `Spacja` / `↑` / `W` - skok
-- `Enter` - start lub restart
+- `Enter` - start, restart lub potwierdzenie akcji w menu
+- `Esc` - powrót do ekranu startowego z menu wyboru
 - na mobile - przyciski ekranowe pod planszą
 
 ## Mechaniki
@@ -35,6 +38,10 @@ Następnie wejdź na `http://localhost:8080`.
 - przeciwnicy patrolujący poziom
 - 3 życia i respawn po trafieniu
 - ekran startowy
+- ekran wyboru poziomu
+- 2 poziomy do ukończenia
+- zapis najlepszego wyniku w `localStorage`
+- krótka instrukcja sterowania na starcie
 - ekran Game Over
 - ekran zwycięstwa po dotarciu do końca poziomu
 
