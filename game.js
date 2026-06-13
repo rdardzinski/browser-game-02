@@ -28,8 +28,8 @@ const touchControls = document.querySelector(".touch-controls");
 const controlButtons = document.querySelectorAll("[data-action]");
 const levelButtons = document.querySelectorAll("[data-level]");
 
-const VIEW_WIDTH = 384;
-const VIEW_HEIGHT = 256;
+const VIEW_WIDTH = 448;
+const VIEW_HEIGHT = 288;
 const TILE_SIZE = 16;
 const LEVEL_WIDTH_TILES = 192;
 const LEVEL_HEIGHT_TILES = 12;
@@ -49,9 +49,9 @@ const INVINCIBLE_TIME = 1.1;
 const STORAGE_KEY_BEST_SCORE = "browser-game-02.bestScore";
 const JOYSTICK_MAX_OFFSET = 22;
 const JOYSTICK_DEADZONE = 0.18;
-const PLAYER_WIDTH = 20;
-const PLAYER_HEIGHT = 28;
-const PLAYER_DRAW_WIDTH = 25;
+const PLAYER_WIDTH = 22;
+const PLAYER_HEIGHT = 30;
+const PLAYER_DRAW_WIDTH = 30;
 
 const TILE = {
   EMPTY: 0,
@@ -102,7 +102,7 @@ function loadBestScore() {
     const rawValue = window.localStorage.getItem(STORAGE_KEY_BEST_SCORE);
     const parsedValue = Number(rawValue);
     return Number.isFinite(parsedValue) && parsedValue > 0 ? parsedValue : 0;
-  } catch {
+  } catch (error) {
     return 0;
   }
 }
@@ -110,7 +110,7 @@ function loadBestScore() {
 function saveBestScore(score) {
   try {
     window.localStorage.setItem(STORAGE_KEY_BEST_SCORE, String(score));
-  } catch {
+  } catch (error) {
     // LocalStorage can be unavailable in private or restricted contexts.
   }
 }
@@ -149,6 +149,8 @@ const clouds = [
   { x: 104, y: 18, width: 48, speed: 0.12 },
   { x: 206, y: 34, width: 42, speed: 0.07 },
   { x: 278, y: 22, width: 34, speed: 0.15 },
+  { x: 362, y: 29, width: 50, speed: 0.09 },
+  { x: 430, y: 16, width: 40, speed: 0.13 },
 ];
 
 function updateBestScore() {
@@ -158,7 +160,7 @@ function updateBestScore() {
   }
 }
 
-function updateRestartLabel() {
+function updateRuntimeButtons() {
   restartButton.textContent =
     game.mode === "play" ? "Restart poziomu" : "Menu startowe";
   restartButton.hidden = game.mode !== "play";
@@ -176,7 +178,7 @@ function syncHud() {
       ? `1/${LEVEL_DEFINITIONS.length}`
       : `${game.currentLevelIndex + 1}/${LEVEL_DEFINITIONS.length}`;
   levelIndicatorElement.textContent = levelLabel;
-  updateRestartLabel();
+  updateRuntimeButtons();
 }
 
 function clearInput() {
@@ -188,7 +190,7 @@ function clearInput() {
   if (joystick && joystickPointerId !== null) {
     try {
       joystick.releasePointerCapture(joystickPointerId);
-    } catch {
+    } catch (error) {
       // Ignore stale pointer capture during mode switches.
     }
   }
@@ -220,6 +222,7 @@ function setJoystickAxis(horizontal) {
 
 function spawnPopupEffect(x, y, text, color) {
   game.effects.push({
+    kind: "text",
     x,
     y,
     text,
@@ -228,6 +231,25 @@ function spawnPopupEffect(x, y, text, color) {
     age: 0,
     rise: 18,
   });
+}
+
+function spawnBurstEffect(x, y, color, count, speed, size) {
+  for (let index = 0; index < count; index += 1) {
+    const angle = (Math.PI * 2 * index) / count + (Math.random() - 0.5) * 0.45;
+    const magnitude = speed * (0.55 + Math.random() * 0.45);
+    game.effects.push({
+      kind: "particle",
+      x,
+      y,
+      vx: Math.cos(angle) * magnitude,
+      vy: Math.sin(angle) * magnitude - speed * 0.2,
+      gravity: 900 + Math.random() * 260,
+      size: size + Math.random() * 1.4,
+      color,
+      life: 0.42 + Math.random() * 0.18,
+      age: 0,
+    });
+  }
 }
 
 function flashDamage() {
@@ -771,7 +793,15 @@ function takeDamage(reason) {
   }
 
   flashDamage();
-  spawnPopupEffect(player.x, player.y - 10, "-1", "#ff7b73");
+  spawnPopupEffect(player.x + player.width / 2, player.y - 10, "-1", "#ff7b73");
+  spawnBurstEffect(
+    player.x + player.width / 2,
+    player.y + player.height / 2,
+    "#ff7b73",
+    8,
+    72,
+    2,
+  );
   game.lives -= 1;
 
   if (game.lives <= 0) {
@@ -930,8 +960,20 @@ function updatePlayer(dt) {
   player.x += player.vx * dt;
   resolveHorizontal(player);
 
-  player.y += player.vy * dt;
+  const verticalVelocity = player.vy;
+  player.y += verticalVelocity * dt;
   player.onGround = resolveVertical(player);
+
+  if (!wasOnGround && player.onGround) {
+    spawnBurstEffect(
+      player.x + player.width / 2,
+      player.y + player.height,
+      "#d7e8ff",
+      4,
+      42,
+      2,
+    );
+  }
 
   if (player.y > WORLD_HEIGHT + 32) {
     takeDamage("Wpadłeś w przepaść.");
@@ -961,11 +1003,21 @@ function checkPlayerInteractions() {
       collectible.taken = true;
       game.score += ITEM_VALUES[collectible.type];
       game.collected += 1;
+      const collectibleColor =
+        collectible.type === "bamboo" ? "#9df56b" : "#ffd56a";
       spawnPopupEffect(
-        collectible.x,
+        collectible.x + collectible.width / 2,
         collectible.y - 8,
         `+${ITEM_VALUES[collectible.type]}`,
-        collectible.type === "bamboo" ? "#8df56e" : "#ffcf71",
+        collectibleColor,
+      );
+      spawnBurstEffect(
+        collectible.x + collectible.width / 2,
+        collectible.y + collectible.height / 2,
+        collectibleColor,
+        6,
+        56,
+        2,
       );
       syncHud();
     }
@@ -990,7 +1042,15 @@ function checkPlayerInteractions() {
       enemy.alive = false;
       player.vy = -JUMP_SPEED * 0.62;
       game.score += 50;
-      spawnPopupEffect(enemy.x, enemy.y - 8, "+50", "#ffcf71");
+      spawnPopupEffect(enemy.x + enemy.width / 2, enemy.y - 8, "+50", "#ffd56a");
+      spawnBurstEffect(
+        enemy.x + enemy.width / 2,
+        enemy.y + enemy.height / 2,
+        "#ffd56a",
+        7,
+        64,
+        2,
+      );
       syncHud();
     } else {
       takeDamage("Przeciwnik uderzył w pandę.");
@@ -1060,7 +1120,13 @@ function update(dt) {
   game.screenShake = Math.max(0, game.screenShake - dt);
   for (const effect of game.effects) {
     effect.age += dt;
-    effect.y -= effect.rise * dt;
+    if (effect.kind === "text") {
+      effect.y -= effect.rise * dt;
+    } else if (effect.kind === "particle") {
+      effect.vy += effect.gravity * dt;
+      effect.x += effect.vx * dt;
+      effect.y += effect.vy * dt;
+    }
   }
   game.effects = game.effects.filter((effect) => effect.age < effect.life);
 
@@ -1130,22 +1196,69 @@ function drawBackground() {
   const height = cssHeight;
 
   const gradient = context.createLinearGradient(0, 0, 0, height);
-  gradient.addColorStop(0, "#8de9ff");
-  gradient.addColorStop(0.5, "#69bdff");
-  gradient.addColorStop(0.86, "#2f79db");
-  gradient.addColorStop(1, "#162747");
+  gradient.addColorStop(0, "#93eeff");
+  gradient.addColorStop(0.5, "#6fc2ff");
+  gradient.addColorStop(0.82, "#357cde");
+  gradient.addColorStop(1, "#132442");
   context.fillStyle = gradient;
   context.fillRect(0, 0, width, height);
 
-  drawRect(18, 16, 38, 38, "rgba(255, 248, 185, 0.9)");
+  drawRect(18, 16, 38, 38, "rgba(255, 248, 185, 0.88)");
   drawRect(22, 20, 30, 30, "rgba(255, 241, 151, 0.95)");
 
   drawMountains();
+  drawForestSilhouette();
   drawClouds();
   drawSunRays();
 
-  context.fillStyle = "rgba(27, 55, 96, 0.3)";
-  context.fillRect(0, height - 22, width, 22);
+  context.fillStyle = "rgba(11, 28, 51, 0.24)";
+  context.fillRect(0, height - 28, width, 28);
+}
+
+function drawForestSilhouette() {
+  const offset = (cameraX * 0.08) % (VIEW_WIDTH + 160);
+  const baseY = Math.round(154 * displayScale);
+  const trunkColor = "#23403e";
+  const canopyColor = "#2d6b57";
+  const canopyHighlight = "#3e886c";
+  const treePositions = [
+    { x: -8, width: 18, height: 30 },
+    { x: 38, width: 20, height: 36 },
+    { x: 96, width: 16, height: 28 },
+    { x: 162, width: 22, height: 34 },
+    { x: 230, width: 18, height: 30 },
+    { x: 292, width: 20, height: 36 },
+    { x: 352, width: 18, height: 32 },
+    { x: 420, width: 22, height: 34 },
+  ];
+
+  for (const tree of treePositions) {
+    const x = Math.round((tree.x - offset) * displayScale);
+    const trunkWidth = Math.max(2, Math.round(4 * displayScale));
+    const canopyWidth = Math.round(tree.width * displayScale);
+    const canopyHeight = Math.round(tree.height * displayScale);
+    const trunkX = Math.round(x + canopyWidth / 2 - trunkWidth / 2);
+    const canopyY = baseY - Math.round(canopyHeight * 0.45);
+    const canopyTopY = baseY - Math.round(canopyHeight * 0.7);
+    const canopyHighlightY = baseY - Math.round(canopyHeight * 0.55);
+    context.fillStyle = trunkColor;
+    context.fillRect(trunkX, baseY, trunkWidth, Math.round(18 * displayScale));
+    context.fillStyle = canopyColor;
+    context.fillRect(x, canopyY, canopyWidth, Math.round(canopyHeight * 0.45));
+    context.fillRect(
+      x + Math.round(canopyWidth * 0.1),
+      canopyTopY,
+      Math.round(canopyWidth * 0.8),
+      Math.max(1, Math.round(canopyHeight * 0.28)),
+    );
+    context.fillStyle = canopyHighlight;
+    context.fillRect(
+      x + Math.round(canopyWidth * 0.18),
+      canopyHighlightY,
+      Math.round(canopyWidth * 0.55),
+      Math.max(1, Math.round(canopyHeight * 0.16)),
+    );
+  }
 }
 
 function drawSunRays() {
@@ -1262,40 +1375,53 @@ function drawWorldTiles() {
       const screenY = Math.round(tileY * TILE_SIZE * displayScale);
 
       if (tile === TILE.SOLID) {
-        drawGroundTile(screenX, screenY);
+        drawGroundTile(screenX, screenY, tileX, tileY);
       } else if (tile === TILE.PLATFORM) {
-        drawPlatformTile(screenX, screenY);
+        drawPlatformTile(screenX, screenY, tileX);
       }
     }
   }
 }
 
-function drawGroundTile(x, y) {
+function drawGroundTile(x, y, tileX, tileY) {
   const s = displayScale;
-  context.fillStyle = "#5c361b";
+  const variant = (tileX + tileY) % 4;
+  context.fillStyle = "#4c2d17";
   context.fillRect(x, y, TILE_SIZE * s, TILE_SIZE * s);
-  context.fillStyle = "#78d96a";
+  context.fillStyle = variant === 0 ? "#88df67" : variant === 1 ? "#74d45d" : "#7fdb67";
   context.fillRect(x, y, TILE_SIZE * s, 4 * s);
-  context.fillStyle = "#a5f66f";
-  context.fillRect(x, y + 2 * s, TILE_SIZE * s, 2 * s);
-  context.fillStyle = "#8b5d2e";
-  context.fillRect(x + 2 * s, y + 8 * s, 12 * s, 2 * s);
-  context.fillStyle = "#4d3018";
-  context.fillRect(x + 4 * s, y + 12 * s, 6 * s, 2 * s);
+  context.fillStyle = "#b8fb86";
+  context.fillRect(x, y + 1 * s, TILE_SIZE * s, 1 * s);
+  context.fillStyle = variant === 2 ? "#9b6634" : "#8a592f";
+  context.fillRect(x + 2 * s, y + 6 * s, 12 * s, 4 * s);
+  context.fillStyle = "#6d421f";
+  context.fillRect(x + 3 * s, y + 10 * s, 10 * s, 3 * s);
+  context.fillStyle = "#3f2514";
+  context.fillRect(x + 5 * s, y + 13 * s, 4 * s, 2 * s);
+  if (variant !== 3) {
+    context.fillStyle = "rgba(255, 255, 255, 0.08)";
+    context.fillRect(x + 10 * s, y + 8 * s, 2 * s, 2 * s);
+  }
 }
 
-function drawPlatformTile(x, y) {
+function drawPlatformTile(x, y, tileX) {
   const s = displayScale;
-  context.fillStyle = "#3b5ad2";
+  const variant = tileX % 3;
+  context.fillStyle = "#2f4db7";
   context.fillRect(x, y, TILE_SIZE * s, TILE_SIZE * s);
-  context.fillStyle = "#8adfff";
+  context.fillStyle = variant === 0 ? "#8de6ff" : "#7dd8ff";
   context.fillRect(x, y, TILE_SIZE * s, 3 * s);
-  context.fillStyle = "#d8f4ff";
+  context.fillStyle = "#edf9ff";
   context.fillRect(x + 2 * s, y + 4 * s, 12 * s, 2 * s);
-  context.fillStyle = "#24439a";
-  context.fillRect(x + 2 * s, y + 10 * s, 12 * s, 2 * s);
-  context.fillStyle = "#17306e";
+  context.fillStyle = variant === 1 ? "#2751a8" : "#24439a";
+  context.fillRect(x + 2 * s, y + 9 * s, 12 * s, 3 * s);
+  context.fillStyle = "#1a306c";
   context.fillRect(x + 1 * s, y + 13 * s, 14 * s, 2 * s);
+  context.fillStyle = "#6a4a22";
+  context.fillRect(x + 5 * s, y + 12 * s, 2 * s, 2 * s);
+  context.fillStyle = "rgba(141, 245, 110, 0.28)";
+  context.fillRect(x + 1 * s, y + 2 * s, 3 * s, 2 * s);
+  context.fillRect(x + 11 * s, y + 2 * s, 3 * s, 2 * s);
 }
 
 function drawHazards() {
@@ -1314,14 +1440,16 @@ function drawSpikeCluster(x, y, width) {
     const spikeX = x + i * spikeWidth;
     const bodyWidth = Math.min(spikeWidth, width - i * spikeWidth);
     const bodyHeight = 12 * displayScale;
-    context.fillStyle = "#a62f45";
-    context.fillRect(spikeX, y + 6 * displayScale, bodyWidth, bodyHeight);
-    context.fillStyle = "#ff9467";
-    context.fillRect(spikeX + 1 * displayScale, y + 5 * displayScale, bodyWidth - 2 * displayScale, 2 * displayScale);
-    context.fillStyle = "#ff6f61";
-    context.fillRect(spikeX + 2 * displayScale, y + 3 * displayScale, bodyWidth - 4 * displayScale, 3 * displayScale);
-    context.fillStyle = "#ffe39b";
-    context.fillRect(spikeX + 3 * displayScale, y, bodyWidth - 6 * displayScale, 3 * displayScale);
+    context.fillStyle = "#5c1828";
+    context.fillRect(spikeX, y + 8 * displayScale, bodyWidth, bodyHeight);
+    context.fillStyle = "#a82f45";
+    context.fillRect(spikeX + 1 * displayScale, y + 7 * displayScale, bodyWidth - 2 * displayScale, 2 * displayScale);
+    context.fillStyle = "#ff8f64";
+    context.fillRect(spikeX + 2 * displayScale, y + 4 * displayScale, bodyWidth - 4 * displayScale, 4 * displayScale);
+    context.fillStyle = "#ffd18c";
+    context.fillRect(spikeX + 3 * displayScale, y + 1 * displayScale, bodyWidth - 6 * displayScale, 4 * displayScale);
+    context.fillStyle = "#fff3bf";
+    context.fillRect(spikeX + 4 * displayScale, y, bodyWidth - 8 * displayScale, 2 * displayScale);
   }
 }
 
@@ -1345,23 +1473,27 @@ function drawCollectibles() {
 
 function drawBambooCoin(x, y) {
   const s = displayScale;
+  context.fillStyle = "rgba(141, 245, 110, 0.14)";
+  context.fillRect(x, y + 1 * s, 14 * s, 14 * s);
   context.fillStyle = "#204d22";
-  context.fillRect(x + 4 * s, y + 1 * s, 4 * s, 12 * s);
+  context.fillRect(x + 5 * s, y + 1 * s, 4 * s, 12 * s);
   context.fillStyle = "#79da61";
-  context.fillRect(x + 5 * s, y, 2 * s, 14 * s);
+  context.fillRect(x + 6 * s, y, 2 * s, 14 * s);
   context.fillStyle = "#2f8b34";
-  context.fillRect(x + 2 * s, y + 4 * s, 10 * s, 2 * s);
+  context.fillRect(x + 3 * s, y + 4 * s, 8 * s, 2 * s);
   context.fillStyle = "#9cfa76";
-  context.fillRect(x + 1 * s, y + 7 * s, 12 * s, 2 * s);
+  context.fillRect(x + 2 * s, y + 7 * s, 10 * s, 2 * s);
   context.fillStyle = "#d8ff9c";
-  context.fillRect(x + 4 * s, y + 2 * s, 3 * s, 2 * s);
-  context.fillRect(x + 8 * s, y + 9 * s, 3 * s, 2 * s);
+  context.fillRect(x + 5 * s, y + 2 * s, 3 * s, 2 * s);
+  context.fillRect(x + 7 * s, y + 9 * s, 3 * s, 2 * s);
   context.fillStyle = "#f7ffd4";
   context.fillRect(x + 6 * s, y + 1 * s, 2 * s, 2 * s);
 }
 
 function drawLeafToken(x, y) {
   const s = displayScale;
+  context.fillStyle = "rgba(255, 213, 106, 0.14)";
+  context.fillRect(x, y, 12 * s, 12 * s);
   context.fillStyle = "#1f6f55";
   context.fillRect(x + 5 * s, y + 1 * s, 2 * s, 10 * s);
   context.fillStyle = "#8df56e";
@@ -1382,14 +1514,16 @@ function drawCheckpoints() {
 
 function drawCheckpointPole(x, y, activated) {
   const s = displayScale;
-  context.fillStyle = "#6d4625";
+  context.fillStyle = "#4c2f18";
   context.fillRect(x + 6 * s, y, 4 * s, 34 * s);
-  context.fillStyle = activated ? "#66e6ff" : "#ffcf71";
+  context.fillStyle = activated ? "#66e6ff" : "#ffd56a";
   context.fillRect(x + 2 * s, y + 4 * s, 14 * s, 8 * s);
-  context.fillStyle = activated ? "#baf7ff" : "#ffe7a9";
+  context.fillStyle = activated ? "#d8fbff" : "#fff1bf";
   context.fillRect(x + 4 * s, y + 6 * s, 10 * s, 4 * s);
   context.fillStyle = "#e5b86c";
   context.fillRect(x + 6 * s, y, 4 * s, 34 * s);
+  context.fillStyle = activated ? "rgba(102, 230, 255, 0.18)" : "rgba(255, 213, 106, 0.16)";
+  context.fillRect(x + 1 * s, y + 2 * s, 16 * s, 12 * s);
 }
 
 function drawGoal() {
@@ -1397,7 +1531,7 @@ function drawGoal() {
   const screenY = toScreenY(level.goal.y);
   const s = displayScale;
 
-  context.fillStyle = "#7d532a";
+  context.fillStyle = "#5a381b";
   context.fillRect(screenX, screenY, 4 * s, 50 * s);
   context.fillRect(screenX + 18 * s, screenY, 4 * s, 50 * s);
   context.fillStyle = "#f7d761";
@@ -1408,6 +1542,8 @@ function drawGoal() {
   context.fillRect(screenX + 7 * s, screenY + 4 * s, 10 * s, 6 * s);
   context.fillStyle = "#f9fbff";
   context.fillRect(screenX + 8 * s, screenY + 16 * s, 8 * s, 18 * s);
+  context.fillStyle = "rgba(255, 213, 106, 0.14)";
+  context.fillRect(screenX - 3 * s, screenY + 1 * s, 30 * s, 22 * s);
 }
 
 function drawEnemies() {
@@ -1432,7 +1568,7 @@ function drawEnemySprite(x, y, facing, frame) {
     context.scale(-1, 1);
   }
 
-  context.fillStyle = "#4f1f22";
+  context.fillStyle = "#3d1720";
   context.fillRect(1 * s, 4 * s, 12 * s, 7 * s);
   context.fillStyle = "#ff7b73";
   context.fillRect(2 * s, 5 * s, 10 * s, 5 * s);
@@ -1446,11 +1582,11 @@ function drawEnemySprite(x, y, facing, frame) {
   context.fillStyle = "#1b2436";
   context.fillRect(5 * s, 6 * s, 1 * s, 1 * s);
   context.fillRect(9 * s, 6 * s, 1 * s, 1 * s);
-  context.fillStyle = "#6f2c33";
+  context.fillStyle = "#7e3340";
   context.fillRect(2 * s, 10 * s, 2 * s, 4 * s - frame * s);
   context.fillRect(6 * s, 10 * s + frame * s, 2 * s, 4 * s - frame * s);
   context.fillRect(10 * s, 10 * s, 2 * s, 4 * s - frame * s);
-  context.fillStyle = "#ff9467";
+  context.fillStyle = "#ffb46c";
   context.fillRect(4 * s, 1 * s, 2 * s, 2 * s);
   context.fillRect(8 * s, 1 * s, 2 * s, 2 * s);
   context.restore();
@@ -1460,7 +1596,7 @@ function drawPlayerSprite() {
   const screenX = toScreenX(player.x);
   const screenY = toScreenY(player.y);
   const walking = player.onGround && Math.abs(player.vx) > 12;
-  const frame = !player.onGround ? 3 : walking ? Math.floor(game.time * 12) % 3 : 0;
+  const frame = !player.onGround ? 3 : walking ? (Math.floor(game.time * 12) % 2) + 1 : 0;
   const s = displayScale;
 
   context.save();
@@ -1474,89 +1610,108 @@ function drawPlayerSprite() {
     context.scale(-1, 1);
   }
 
-  drawPandaBlocks(frame);
+  if (player.onGround) {
+    context.fillStyle = "rgba(11, 20, 36, 0.22)";
+    context.fillRect(8 * s, 29 * s, 14 * s, 3 * s);
+  }
+
+  drawPandaSprite(frame);
   context.restore();
 }
 
-function drawPandaBlocks(frame) {
+function drawPandaSprite(frame) {
   const s = displayScale;
-  const jumpLift = frame === 3 ? -2 : 0;
-  const pose = frame === 1 ? 1 : frame === 2 ? -1 : 0;
-
   const block = (x, y, width, height, color) => {
     context.fillStyle = color;
     context.fillRect(x * s, y * s, width * s, height * s);
   };
 
-  block(6, 11 + jumpLift, 12, 12, "#16325e");
-  block(7, 12 + jumpLift, 10, 10, "#4ea7ff");
-  block(8, 13 + jumpLift, 8, 7, "#8de8ff");
-  block(9, 14 + jumpLift, 6, 4, "#baf7ff");
-  block(10, 16 + jumpLift, 4, 2, "#f8fdff");
+  const hop = frame === 3 ? -2 : 0;
+  const step = frame === 1 ? 1 : frame === 2 ? -1 : 0;
+  const armSwing = frame === 3 ? -1 : step;
 
-  block(7, 4 + jumpLift, 10, 8, "#16325e");
-  block(8, 5 + jumpLift, 8, 6, "#4ea7ff");
-  block(9, 6 + jumpLift, 6, 4, "#a6efff");
-  block(10, 7 + jumpLift, 4, 2, "#f8fdff");
-  block(8, 6 + jumpLift, 1, 1, "#f8fdff");
-  block(13, 6 + jumpLift, 1, 1, "#f8fdff");
-  block(10, 8 + jumpLift, 1, 1, "#091224");
-  block(12, 8 + jumpLift, 1, 1, "#091224");
-  block(10, 9 + jumpLift, 3, 1, "#091224");
-  block(11, 9 + jumpLift, 1, 1, "#f9fbff");
+  block(9, 2 + hop, 3, 2, "#0f2344");
+  block(11, 1 + hop, 8, 9, "#0f2344");
+  block(9, 1 + hop, 13, 12, "#0f2344");
+  block(8, 3 + hop, 15, 13, "#0f2344");
+  block(11, 3 + hop, 9, 9, "#4ca6ff");
+  block(12, 4 + hop, 7, 7, "#79dbff");
+  block(13, 5 + hop, 5, 5, "#baf7ff");
+  block(14, 6 + hop, 3, 3, "#f8fdff");
 
-  block(6, 3 + jumpLift, 3, 3, "#16325e");
-  block(15, 3 + jumpLift, 3, 3, "#16325e");
-  block(7, 4 + jumpLift, 1, 1, "#4ea7ff");
-  block(16, 4 + jumpLift, 1, 1, "#4ea7ff");
+  block(9, 0 + hop, 4, 4, "#0f2344");
+  block(18, 0 + hop, 4, 4, "#0f2344");
+  block(10, 1 + hop, 2, 2, "#4ca6ff");
+  block(19, 1 + hop, 2, 2, "#4ca6ff");
+  block(10, 1 + hop, 1, 1, "#d8fbff");
+  block(19, 1 + hop, 1, 1, "#d8fbff");
 
-  block(17, 10 + jumpLift, 4, 3, "#16325e");
-  block(18, 9 + jumpLift, 3, 10, "#2b5a9a");
-  block(19, 10 + jumpLift, 2, 8, "#4ea7ff");
-  block(20, 12 + jumpLift, 2, 5, "#8de8ff");
-  block(21, 13 + jumpLift, 1, 3, "#f8fdff");
-  block(18, 16 + jumpLift, 4, 2, "#5fcfff");
-  block(19, 18 + jumpLift, 3, 2, "#16325e");
+  block(7, 8 + hop, 11, 13, "#0f2344");
+  block(8, 9 + hop, 9, 11, "#2f63a7");
+  block(9, 10 + hop, 7, 9, "#4ca6ff");
+  block(10, 11 + hop, 5, 6, "#8fe8ff");
+  block(11, 12 + hop, 3, 3, "#d8fbff");
+  block(10, 14 + hop, 1, 1, "#091224");
+  block(13, 14 + hop, 1, 1, "#091224");
+  block(11, 15 + hop, 3, 1, "#091224");
+
+  block(4, 11 + hop, 7, 14, "#0f2344");
+  block(5, 12 + hop, 5, 12, "#3a6fb4");
+  block(6, 13 + hop, 3, 9, "#66c8ff");
+  block(7, 14 + hop, 2, 5, "#baf7ff");
+  block(5, 18 + hop, 5, 2, "#16325e");
+  block(3, 10 + hop, 4, 5, "#0f2344");
+  block(2, 12 + hop, 3, 7, "#16325e");
+  block(1, 14 + hop, 4, 4, "#4ea7ff");
+  block(2, 15 + hop, 5, 6, "#79dbff");
+  block(4, 16 + hop, 4, 5, "#baf7ff");
+  block(6, 17 + hop, 3, 3, "#f8fdff");
+  block(1, 18 + hop, 3, 4, "#16325e");
+  block(0, 19 + hop, 2, 4, "#0f2344");
+  block(5, 10 + hop, 3, 2, "#66c8ff");
+
+  block(20, 11 + hop, 4, 4, "#0f2344");
+  block(21, 12 + hop, 3, 3, "#4ea7ff");
+  block(22, 13 + hop, 2, 2, "#8fe8ff");
+  block(23, 14 + hop, 1, 1, "#f8fdff");
+
+  block(19, 15 + hop, 4, 8, "#0f2344");
+  block(20, 16 + hop, 3, 7, "#2f63a7");
+  block(21, 17 + hop, 2, 5, "#66c8ff");
+  block(22, 18 + hop, 1, 3, "#baf7ff");
+  block(20, 23 + hop, 4, 2, "#16325e");
 
   if (frame === 3) {
-    block(5, 13 + jumpLift, 2, 4, "#16325e");
-    block(16, 13 + jumpLift, 2, 4, "#16325e");
-    block(7, 20 + jumpLift, 3, 4, "#16325e");
-    block(12, 20 + jumpLift, 3, 4, "#16325e");
-    block(7, 19 + jumpLift, 3, 2, "#4ea7ff");
-    block(12, 19 + jumpLift, 3, 2, "#4ea7ff");
-    block(8, 21 + jumpLift, 1, 1, "#f8fdff");
-    block(13, 21 + jumpLift, 1, 1, "#f8fdff");
-  } else if (pose === 1) {
-    block(4, 13 + jumpLift, 2, 5, "#16325e");
-    block(16, 14 + jumpLift, 2, 4, "#16325e");
-    block(6, 20 + jumpLift, 3, 5, "#16325e");
-    block(12, 21 + jumpLift, 3, 4, "#16325e");
-    block(6, 19 + jumpLift, 3, 2, "#4ea7ff");
-    block(12, 20 + jumpLift, 3, 2, "#4ea7ff");
-  } else if (pose === -1) {
-    block(4, 14 + jumpLift, 2, 4, "#16325e");
-    block(16, 13 + jumpLift, 2, 5, "#16325e");
-    block(6, 21 + jumpLift, 3, 4, "#16325e");
-    block(12, 20 + jumpLift, 3, 5, "#16325e");
-    block(6, 20 + jumpLift, 3, 2, "#4ea7ff");
-    block(12, 19 + jumpLift, 3, 2, "#4ea7ff");
+    block(12, 18 + hop, 3, 5, "#0f2344");
+    block(15, 18 + hop, 3, 5, "#0f2344");
+    block(10, 19 + hop, 4, 3, "#66c8ff");
+    block(15, 19 + hop, 4, 3, "#66c8ff");
+    block(11, 21 + hop, 2, 3, "#f8fdff");
+    block(16, 21 + hop, 2, 3, "#f8fdff");
   } else {
-    block(4, 14 + jumpLift, 2, 4, "#16325e");
-    block(16, 14 + jumpLift, 2, 4, "#16325e");
-    block(6, 20 + jumpLift, 3, 5, "#16325e");
-    block(12, 20 + jumpLift, 3, 5, "#16325e");
-    block(6, 19 + jumpLift, 3, 2, "#4ea7ff");
-    block(12, 19 + jumpLift, 3, 2, "#4ea7ff");
+    block(11, 19 + hop, 3, 5, "#0f2344");
+    block(15, 19 + hop, 3, 5, "#0f2344");
+    block(12, 20 + hop, 2, 4, "#66c8ff");
+    block(16, 20 + hop, 2, 4, "#66c8ff");
+    block(12, 23 + hop, 2, 2, "#f8fdff");
+    block(16, 23 + hop, 2, 2, "#f8fdff");
   }
 
-  block(18, 20 + jumpLift, 3, 2, "#4ea7ff");
-  block(20, 21 + jumpLift, 2, 2, "#16325e");
-  block(19, 22 + jumpLift, 4, 2, "#16325e");
+  block(23, 20 + hop, 4, 2, "#0f2344");
+  block(24, 21 + hop, 2, 2, "#4ea7ff");
+  block(22, 22 + hop, 4, 2, "#16325e");
+  block(3 + armSwing, 20 + hop, 3, 3, "#0f2344");
+  block(4 + armSwing, 21 + hop, 2, 2, "#4ea7ff");
+  block(24 - armSwing, 20 + hop, 3, 3, "#0f2344");
+  block(25 - armSwing, 21 + hop, 2, 2, "#4ea7ff");
+  block(8, 28 + hop, 4, 2, "#16325e");
+  block(16, 28 + hop, 4, 2, "#16325e");
+  block(9, 27 + hop, 3, 2, "#4ea7ff");
+  block(17, 27 + hop, 3, 2, "#4ea7ff");
 }
 
 function drawEffects() {
-  const fontSize = Math.max(10, Math.round(10 * displayScale));
+  const fontSize = Math.max(10, Math.round(11 * displayScale));
   context.font = `bold ${fontSize}px monospace`;
   context.textAlign = "center";
   context.textBaseline = "middle";
@@ -1569,11 +1724,21 @@ function drawEffects() {
 
     context.save();
     context.globalAlpha = alpha;
-    context.fillStyle = effect.color;
-    context.strokeStyle = "rgba(8, 16, 32, 0.85)";
-    context.lineWidth = Math.max(1, displayScale * 0.6);
-    context.strokeText(effect.text, screenX, screenY);
-    context.fillText(effect.text, screenX, screenY);
+
+    if (effect.kind === "particle") {
+      const size = Math.max(1, Math.round(effect.size * displayScale));
+      context.fillStyle = effect.color;
+      context.fillRect(screenX, screenY, size, size);
+      context.fillStyle = "rgba(255, 255, 255, 0.38)";
+      context.fillRect(screenX, screenY, Math.max(1, size - 1), 1);
+    } else {
+      context.fillStyle = effect.color;
+      context.strokeStyle = "rgba(8, 16, 32, 0.9)";
+      context.lineWidth = Math.max(1, displayScale * 0.7);
+      context.strokeText(effect.text, screenX, screenY);
+      context.fillText(effect.text, screenX, screenY);
+    }
+
     context.restore();
   }
 }
@@ -1600,7 +1765,7 @@ function render() {
   context.restore();
 
   if (game.damageFlash > 0) {
-    context.fillStyle = `rgba(255, 92, 92, ${game.damageFlash * 0.18})`;
+    context.fillStyle = `rgba(255, 92, 92, ${game.damageFlash * 0.22})`;
     context.fillRect(0, 0, cssWidth, cssHeight);
   }
 }

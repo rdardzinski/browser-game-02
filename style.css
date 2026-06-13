@@ -1,18 +1,18 @@
 :root {
   color-scheme: dark;
-  --sky-1: #8be5ff;
-  --sky-2: #56b7ff;
-  --sky-3: #2c6dd0;
-  --panel: #17243b;
-  --panel-2: #203351;
-  --panel-3: #0d1627;
-  --text: #f5fbff;
-  --muted: #c7d5ea;
-  --accent: #8df56e;
-  --accent-2: #66e6ff;
-  --warm: #ffcf71;
-  --warning: #ff7b73;
-  --shadow: rgba(4, 10, 26, 0.42);
+  --sky-1: #8cecff;
+  --sky-2: #5ab8ff;
+  --sky-3: #2d6ed6;
+  --panel: #122033;
+  --panel-2: #1a2a46;
+  --panel-3: #0b1220;
+  --text: #f6fbff;
+  --muted: #ced9ec;
+  --accent: #9df56b;
+  --accent-2: #72ecff;
+  --warm: #ffd56a;
+  --warning: #ff7d73;
+  --shadow: rgba(2, 8, 20, 0.46);
 }
 
 * {
@@ -33,10 +33,10 @@ body {
   color: var(--text);
   font-family: "Trebuchet MS", "Verdana", sans-serif;
   background:
-    radial-gradient(circle at 18% 18%, rgba(255, 255, 255, 0.28), transparent 16%),
-    radial-gradient(circle at 84% 10%, rgba(255, 246, 176, 0.24), transparent 18%),
-    radial-gradient(circle at 50% 100%, rgba(6, 14, 42, 0.8), transparent 32%),
-    linear-gradient(180deg, #87e6ff 0%, #57b8ff 34%, #2f6ecf 64%, #172554 100%);
+    radial-gradient(circle at 18% 18%, rgba(255, 255, 255, 0.26), transparent 16%),
+    radial-gradient(circle at 82% 12%, rgba(255, 239, 166, 0.24), transparent 18%),
+    radial-gradient(circle at 50% 106%, rgba(4, 12, 32, 0.88), transparent 34%),
+    linear-gradient(180deg, #8cecff 0%, #5bbaff 34%, #2f71d5 64%, #16264d 100%);
 }
 
 body::before {
@@ -66,7 +66,7 @@ button {
 .app-shell {
   width: 100%;
   height: 100dvh;
-  padding: clamp(4px, 0.8vw, 10px);
+  padding: clamp(2px, 0.35vw, 6px);
 }
 
 .screen {
@@ -92,18 +92,18 @@ button {
   left: calc(6px + env(safe-area-inset-left));
   right: calc(6px + env(safe-area-inset-right));
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: flex-start;
-  gap: 8px;
+  gap: 6px;
   pointer-events: none;
   flex-wrap: wrap;
 }
 
 .hud-chip {
-  min-width: 82px;
-  padding: 8px 10px;
+  min-width: 74px;
+  padding: 7px 9px;
   border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 14px;
+  border-radius: 13px;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.1), transparent),
     linear-gradient(180deg, rgba(23, 36, 59, 0.96), rgba(13, 22, 39, 0.98));
@@ -123,8 +123,15 @@ button {
   display: block;
   margin-top: 2px;
   color: var(--accent);
-  font-size: 1.08rem;
+  font-size: 1.02rem;
   line-height: 1;
+}
+
+.hud-action-slot {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  pointer-events: auto;
 }
 
 .restart-button,
@@ -157,6 +164,15 @@ button {
 
 .icon-button {
   background: linear-gradient(180deg, #f4f8ff, #bfd3ff);
+}
+
+.pause-button {
+  min-width: 40px;
+  min-height: 40px;
+  padding: 0;
+  border-radius: 14px;
+  font-size: 0.9rem;
+  line-height: 1;
 }
 
 .restart-button:hover,
@@ -197,10 +213,12 @@ button {
 .board-wrap {
   position: relative;
   overflow: hidden;
-  border: 3px solid rgba(10, 16, 28, 0.9);
-  border-radius: 22px;
-  background: #70cfff;
-  box-shadow: 0 22px 60px var(--shadow);
+  border: 2px solid rgba(10, 16, 28, 0.88);
+  border-radius: 18px;
+  background: #68c6ff;
+  box-shadow:
+    0 24px 60px var(--shadow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16);
   image-rendering: pixelated;
   max-width: 100%;
   max-height: 100%;
@@ -213,7 +231,7 @@ canvas {
   user-select: none;
   touch-action: none;
   image-rendering: pixelated;
-  background: #70cfff;
+  background: #68c6ff;
 }
 
 .overlay {
@@ -222,8 +240,10 @@ canvas {
   display: grid;
   place-items: center;
   padding: 10px;
-  background: linear-gradient(180deg, rgba(5, 11, 27, 0.42), rgba(5, 11, 27, 0.76));
-  backdrop-filter: blur(6px);
+  background:
+    radial-gradient(circle at 50% 18%, rgba(255, 255, 255, 0.08), transparent 24%),
+    linear-gradient(180deg, rgba(4, 8, 19, 0.46), rgba(4, 8, 19, 0.8));
+  backdrop-filter: blur(7px);
 }
 
 .overlay[hidden] {
@@ -231,16 +251,19 @@ canvas {
 }
 
 .overlay-card {
-  width: min(100%, 440px);
+  width: min(100%, 430px);
   max-height: calc(100% - 12px);
   overflow: auto;
   padding: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 22px;
   background:
+    radial-gradient(circle at 50% 0%, rgba(114, 236, 255, 0.12), transparent 30%),
     linear-gradient(180deg, rgba(255, 255, 255, 0.09), transparent),
     linear-gradient(180deg, rgba(18, 31, 56, 0.97), rgba(12, 20, 36, 0.99));
-  box-shadow: 0 24px 48px rgba(3, 8, 23, 0.4);
+  box-shadow:
+    0 26px 54px rgba(3, 8, 23, 0.44),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
   text-align: center;
 }
 
@@ -271,6 +294,7 @@ canvas {
 
 .overlay h2 {
   font-size: clamp(1.3rem, 4.2vw, 1.95rem);
+  line-height: 1.05;
 }
 
 .overlay p:not(.overlay-kicker) {
@@ -397,13 +421,13 @@ canvas {
   align-items: flex-end;
   justify-content: space-between;
   gap: 10px;
-  padding: 0 clamp(8px, 1.8vw, 18px);
+  padding: 0 clamp(8px, 1.6vw, 18px);
   pointer-events: none;
   z-index: 3;
 }
 
 .joystick-shell {
-  width: clamp(132px, 30vw, 210px);
+  width: clamp(146px, 32vw, 224px);
   aspect-ratio: 1;
   pointer-events: none;
 }
@@ -436,8 +460,8 @@ canvas {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 42%;
-  height: 42%;
+  width: 40%;
+  height: 40%;
   border-radius: 50%;
   transform:
     translate(calc(-50% + var(--thumb-x)), calc(-50% + var(--thumb-y)));
@@ -450,8 +474,8 @@ canvas {
 }
 
 .control {
-  min-height: clamp(112px, 24vw, 182px);
-  min-width: clamp(112px, 24vw, 182px);
+  min-height: clamp(118px, 25vw, 190px);
+  min-width: clamp(118px, 25vw, 190px);
   border: 1px solid rgba(6, 14, 26, 0.25);
   background:
     radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.55), transparent 28%),
@@ -504,6 +528,11 @@ canvas {
 
   .overlay-card {
     padding: 16px;
+  }
+
+  .pause-button {
+    min-width: 38px;
+    min-height: 38px;
   }
 
   .overlay-actions {
