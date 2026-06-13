@@ -32,22 +32,23 @@
               <strong id="lives">3</strong>
             </div>
             <div class="hud-chip">
-              <span>Skarby</span>
-              <strong id="collectibles">0/0</strong>
+              <span>Poziom</span>
+              <strong id="levelIndicator">1/2</strong>
             </div>
             <div class="hud-chip">
               <span>Najlepszy</span>
               <strong id="bestScore">0</strong>
             </div>
-            <div class="hud-chip">
-              <span>Poziom</span>
-              <strong id="levelIndicator">1/2</strong>
-            </div>
           </div>
 
-          <button id="restartButton" type="button" class="restart-button">
-            Restart
-          </button>
+          <div class="top-actions">
+            <button id="restartButton" type="button" class="restart-button">
+              Restart
+            </button>
+            <button id="pauseButton" type="button" class="icon-button">
+              Pauza
+            </button>
+          </div>
         </header>
 
         <div class="board-stage">
@@ -63,22 +64,21 @@
                 <p class="overlay-kicker" id="overlayKicker">W drogę</p>
                 <h2 id="overlayTitle">Skacz po bambusowym szlaku</h2>
                 <p id="overlayText">
-                  Biegnij w prawo, zbieraj bambusowe monety i listki, omijaj
-                  przeciwników oraz przeszkody i dotrzyj do flagi na końcu
-                  poziomu.
+                  Biegnij, skacz i zbieraj skarby, a krótkie wskazówki otwórz w
+                  osobnym ekranie.
                 </p>
                 <div class="start-steps" id="overlayInstructions" aria-label="Jak grać">
                   <div class="start-step">
                     <strong>1</strong>
-                    <span>Poruszaj się w lewo i prawo, żeby rozpędzić pandę.</span>
+                    <span>Na klawiaturze użyj strzałek albo A i D do ruchu.</span>
                   </div>
                   <div class="start-step">
                     <strong>2</strong>
-                    <span>Skacz po platformach i zbieraj pixelowe skarby.</span>
+                    <span>Skacz spacją, W, strzałką w górę albo dotknij przycisku skoku.</span>
                   </div>
                   <div class="start-step">
                     <strong>3</strong>
-                    <span>Unikaj wrogów, nie wpadaj w pułapki i dotrzyj do mety.</span>
+                    <span>Pause uruchomisz klawiszem P, Esc albo przyciskiem Pauza.</span>
                   </div>
                 </div>
                 <div class="level-grid" id="levelGrid" hidden>
@@ -96,6 +96,9 @@
                 <p class="overlay-summary" id="overlaySummary" hidden></p>
                 <div class="overlay-actions">
                   <button id="startButton" type="button">Rozpocznij grę</button>
+                  <button id="helpButton" type="button" class="secondary-button">
+                    Jak grać
+                  </button>
                   <button id="levelSelectButton" type="button" class="secondary-button">
                     Wybierz poziom
                   </button>
@@ -108,35 +111,26 @@
           </section>
         </div>
 
-        <div class="controls" aria-label="Sterowanie dotykowe">
-          <button
-            class="control control-left"
-            data-action="left"
-            aria-label="Lewo"
-          >
-            ←
-          </button>
+        <div class="touch-controls" aria-label="Sterowanie dotykowe">
+          <div class="joystick-shell">
+            <button
+              id="joystick"
+              class="joystick"
+              type="button"
+              aria-label="Joystick ruchu"
+            >
+              <span class="joystick-ring"></span>
+              <span class="joystick-thumb" id="joystickThumb"></span>
+            </button>
+          </div>
           <button
             class="control control-jump"
             data-action="jump"
             aria-label="Skok"
           >
-            ↑
-          </button>
-          <button
-            class="control control-right"
-            data-action="right"
-            aria-label="Prawo"
-          >
-            →
+            SKOK
           </button>
         </div>
-
-        <p class="hint">
-          <span>Strzałki / WASD</span> ruch
-          <span>Spacja</span> skok
-          <span>Enter</span> start lub restart
-        </p>
       </section>
     </main>
 

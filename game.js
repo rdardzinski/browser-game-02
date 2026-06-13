@@ -4,11 +4,12 @@ const canvas = document.getElementById("game");
 const context = canvas.getContext("2d");
 const scoreElement = document.getElementById("score");
 const livesElement = document.getElementById("lives");
-const collectiblesElement = document.getElementById("collectibles");
 const bestScoreElement = document.getElementById("bestScore");
 const levelIndicatorElement = document.getElementById("levelIndicator");
 const restartButton = document.getElementById("restartButton");
+const pauseButton = document.getElementById("pauseButton");
 const startButton = document.getElementById("startButton");
+const helpButton = document.getElementById("helpButton");
 const levelSelectButton = document.getElementById("levelSelectButton");
 const backButton = document.getElementById("backButton");
 const overlay = document.getElementById("overlay");
@@ -19,13 +20,16 @@ const overlayText = document.getElementById("overlayText");
 const overlaySummary = document.getElementById("overlaySummary");
 const overlayInstructions = document.getElementById("overlayInstructions");
 const levelGrid = document.getElementById("levelGrid");
+const joystick = document.getElementById("joystick");
+const joystickThumb = document.getElementById("joystickThumb");
 const boardStage = document.querySelector(".board-stage");
 const boardWrap = document.querySelector(".board-wrap");
+const touchControls = document.querySelector(".touch-controls");
 const controlButtons = document.querySelectorAll("[data-action]");
 const levelButtons = document.querySelectorAll("[data-level]");
 
-const VIEW_WIDTH = 320;
-const VIEW_HEIGHT = 192;
+const VIEW_WIDTH = 352;
+const VIEW_HEIGHT = 208;
 const TILE_SIZE = 16;
 const LEVEL_WIDTH_TILES = 192;
 const LEVEL_HEIGHT_TILES = 12;
@@ -43,6 +47,8 @@ const COYOTE_TIME = 0.09;
 const JUMP_BUFFER_TIME = 0.12;
 const INVINCIBLE_TIME = 1.1;
 const STORAGE_KEY_BEST_SCORE = "browser-game-02.bestScore";
+const JOYSTICK_MAX_OFFSET = 22;
+const JOYSTICK_DEADZONE = 0.18;
 
 const TILE = {
   EMPTY: 0,
@@ -85,6 +91,7 @@ const input = {
   right: false,
   jumpHeld: false,
   jumpQueued: false,
+  horizontal: 0,
 };
 
 function loadBestScore() {
@@ -117,6 +124,10 @@ const game = {
   checkpointLabel: "Początek",
   currentLevelIndex: 0,
   bestScore: loadBestScore(),
+  overlayReturnMode: "menu",
+  damageFlash: 0,
+  screenShake: 0,
+  effects: [],
 };
 
 let level = createLevel(0);
@@ -128,6 +139,7 @@ let cssWidth = VIEW_WIDTH;
 let cssHeight = VIEW_HEIGHT;
 let accumulator = 0;
 let lastTimestamp = 0;
+let joystickPointerId = null;
 
 const clouds = [
   { x: 18, y: 26, width: 38, speed: 0.08 },
@@ -146,13 +158,15 @@ function updateBestScore() {
 function updateRestartLabel() {
   restartButton.textContent =
     game.mode === "play" ? "Restart poziomu" : "Menu startowe";
+  restartButton.hidden = game.mode !== "play";
+  pauseButton.hidden = game.mode !== "play";
+  touchControls.hidden = game.mode !== "play";
 }
 
 function syncHud() {
   updateBestScore();
   scoreElement.textContent = String(game.score);
   livesElement.textContent = String(game.lives);
-  collectiblesElement.textContent = `${game.collected}/${game.totalCollectibles}`;
   bestScoreElement.textContent = String(game.bestScore);
   const levelLabel =
     game.mode === "menu" || game.mode === "level-select"
@@ -167,6 +181,55 @@ function clearInput() {
   input.right = false;
   input.jumpHeld = false;
   input.jumpQueued = false;
+  input.horizontal = 0;
+  if (joystick && joystickPointerId !== null) {
+    try {
+      joystick.releasePointerCapture(joystickPointerId);
+    } catch {
+      // Ignore stale pointer capture during mode switches.
+    }
+  }
+  joystickPointerId = null;
+  resetJoystick();
+}
+
+function resetJoystick() {
+  if (!joystick) {
+    return;
+  }
+
+  joystick.style.setProperty("--thumb-x", "0px");
+  joystick.style.setProperty("--thumb-y", "0px");
+}
+
+function setJoystickAxis(horizontal) {
+  input.horizontal = clamp(horizontal, -1, 1);
+  if (!joystick) {
+    return;
+  }
+
+  joystick.style.setProperty(
+    "--thumb-x",
+    `${Math.round(input.horizontal * JOYSTICK_MAX_OFFSET)}px`,
+  );
+  joystick.style.setProperty("--thumb-y", "0px");
+}
+
+function spawnPopupEffect(x, y, text, color) {
+  game.effects.push({
+    x,
+    y,
+    text,
+    color,
+    life: 0.55,
+    age: 0,
+    rise: 18,
+  });
+}
+
+function flashDamage() {
+  game.damageFlash = Math.max(game.damageFlash, 0.24);
+  game.screenShake = Math.max(game.screenShake, 0.22);
 }
 
 function showOverlay({
@@ -176,11 +239,13 @@ function showOverlay({
   text,
   summary = "",
   primaryLabel = "Rozpocznij grę",
+  helpLabel = "Jak grać",
   secondaryLabel = "Wybierz poziom",
   backLabel = "Wróć",
   showInstructions = false,
   showLevelGrid = false,
   showPrimary = true,
+  showHelp = true,
   showSecondary = true,
   showBack = false,
 }) {
@@ -189,11 +254,13 @@ function showOverlay({
   overlayTitle.textContent = title;
   overlayText.textContent = text;
   startButton.textContent = primaryLabel;
+  helpButton.textContent = helpLabel;
   levelSelectButton.textContent = secondaryLabel;
   backButton.textContent = backLabel;
   overlayInstructions.hidden = !showInstructions;
   levelGrid.hidden = !showLevelGrid;
   startButton.hidden = !showPrimary;
+  helpButton.hidden = !showHelp;
   levelSelectButton.hidden = !showSecondary;
   backButton.hidden = !showBack;
   overlaySummary.hidden = summary.length === 0;
@@ -207,25 +274,57 @@ function hideOverlay() {
 
 function showMenuScreen() {
   game.mode = "menu";
+  game.overlayReturnMode = "menu";
+  clearInput();
   syncHud();
   showOverlay({
     badge: LEVEL_DEFINITIONS[0].badge,
     kicker: LEVEL_DEFINITIONS[0].kicker,
     title: LEVEL_DEFINITIONS[0].title,
-    text: LEVEL_DEFINITIONS[0].text,
-    summary: `Najlepszy wynik zapisany lokalnie: ${game.bestScore} pkt. Zacznij od poziomu 1 albo wybierz poziom 2 od razu.`,
+    text: "Krótka, szybka platformówka z większym widokiem i czystym HUD-em.",
+    summary: `Najlepszy wynik zapisany lokalnie: ${game.bestScore} pkt.`,
     primaryLabel: "Graj w poziom 1",
+    helpLabel: "Jak grać",
     secondaryLabel: "Wybierz poziom",
-    showInstructions: true,
+    showInstructions: false,
     showLevelGrid: false,
     showPrimary: true,
+    showHelp: true,
     showSecondary: true,
     showBack: false,
   });
 }
 
+function showHowToPlayScreen(returnMode = "menu") {
+  game.mode = "how-to-play";
+  game.overlayReturnMode = returnMode;
+  clearInput();
+  syncHud();
+  showOverlay({
+    badge: "Jak grać",
+    kicker: "Sterowanie",
+    title: "Krótka instrukcja",
+    text:
+      "Klawiatura i dotyk prowadzą tę samą postać. W trakcie gry ekran pozostaje możliwie czysty.",
+    summary:
+      "Na mobile użyj joysticka po lewej i dużego skoku po prawej. Pauza pozwala wrócić bez utraty postępu.",
+    primaryLabel: returnMode === "pause" ? "Wznów grę" : "Graj w poziom 1",
+    helpLabel: "Jak grać",
+    secondaryLabel: returnMode === "pause" ? "Restart poziomu" : "Wybierz poziom",
+    backLabel: returnMode === "pause" ? "Wróć do pauzy" : "Wróć",
+    showInstructions: true,
+    showLevelGrid: false,
+    showPrimary: true,
+    showHelp: false,
+    showSecondary: returnMode !== "pause",
+    showBack: true,
+  });
+}
+
 function showLevelSelectScreen() {
   game.mode = "level-select";
+  game.overlayReturnMode = "menu";
+  clearInput();
   syncHud();
   showOverlay({
     badge: "Wybór poziomu",
@@ -235,18 +334,47 @@ function showLevelSelectScreen() {
       "Poziom 1 jest łagodniejszy. Poziom 2 ma ciaśniejsze skoki i wymaga większej precyzji.",
     summary: `Najlepszy wynik zapisany lokalnie: ${game.bestScore} pkt.`,
     primaryLabel: "Wybierz poziom",
+    helpLabel: "Jak grać",
     secondaryLabel: "Wybierz poziom",
     backLabel: "Wróć",
     showInstructions: false,
     showLevelGrid: true,
     showPrimary: false,
+    showHelp: false,
     showSecondary: false,
+    showBack: true,
+  });
+}
+
+function showPauseScreen() {
+  game.mode = "pause";
+  game.overlayReturnMode = "pause";
+  clearInput();
+  syncHud();
+  showOverlay({
+    badge: "Pauza",
+    kicker: "Gra wstrzymana",
+    title: "Możesz wrócić do biegu",
+    text:
+      "Postęp jest zachowany. Wznów grę, obejrzyj krótką instrukcję albo wróć do menu.",
+    summary: `Wynik: ${game.score} pkt. Życia: ${game.lives}. Checkpoint: ${game.checkpointLabel}.`,
+    primaryLabel: "Wznów grę",
+    helpLabel: "Jak grać",
+    secondaryLabel: "Restart poziomu",
+    backLabel: "Menu startowe",
+    showInstructions: false,
+    showLevelGrid: false,
+    showPrimary: true,
+    showHelp: true,
+    showSecondary: true,
     showBack: true,
   });
 }
 
 function showLevelClearScreen(nextLevelIndex) {
   game.mode = "level-clear";
+  game.overlayReturnMode = "menu";
+  clearInput();
   syncHud();
   const nextLevel = LEVEL_DEFINITIONS[nextLevelIndex];
   showOverlay({
@@ -257,10 +385,12 @@ function showLevelClearScreen(nextLevelIndex) {
       "Dobra robota. Możesz przejść do kolejnego poziomu albo wrócić do wyboru planszy.",
     summary: `Wynik teraz: ${game.score} pkt. Skarby: ${game.collected}/${game.totalCollectibles}. Ostatni checkpoint: ${game.checkpointLabel}.`,
     primaryLabel: nextLevel ? `Kontynuuj do ${nextLevel.label}` : "Zakończ",
+    helpLabel: "Jak grać",
     secondaryLabel: "Wybierz poziom",
     showInstructions: false,
     showLevelGrid: false,
     showPrimary: true,
+    showHelp: false,
     showSecondary: true,
     showBack: false,
   });
@@ -268,6 +398,8 @@ function showLevelClearScreen(nextLevelIndex) {
 
 function showGameOverScreen(reason) {
   game.mode = "game-over";
+  game.overlayReturnMode = "menu";
+  clearInput();
   syncHud();
   showOverlay({
     badge: "Game Over",
@@ -276,10 +408,12 @@ function showGameOverScreen(reason) {
     text: reason || "Spróbuj ponownie i przejdź poziom czystszą linią skoków.",
     summary: `Wynik: ${game.score} pkt. Skarby: ${game.collected}/${game.totalCollectibles}. Ostatni checkpoint: ${game.checkpointLabel}.`,
     primaryLabel: "Zagraj ponownie",
+    helpLabel: "Jak grać",
     secondaryLabel: "Wybierz poziom",
     showInstructions: false,
     showLevelGrid: false,
     showPrimary: true,
+    showHelp: false,
     showSecondary: true,
     showBack: false,
   });
@@ -288,6 +422,8 @@ function showGameOverScreen(reason) {
 function showVictoryScreen() {
   game.mode = "victory";
   game.score += game.lives * 100;
+  game.overlayReturnMode = "menu";
+  clearInput();
   syncHud();
   showOverlay({
     badge: "Zwycięstwo",
@@ -296,10 +432,12 @@ function showVictoryScreen() {
     text: "Przeszedłeś cały zestaw poziomów, zebrałeś skarby i domknąłeś run bez utraty kontroli.",
     summary: `Wynik końcowy: ${game.score} pkt. Najlepszy wynik: ${game.bestScore} pkt. Skarby: ${game.collected}/${game.totalCollectibles}.`,
     primaryLabel: "Zagraj ponownie",
+    helpLabel: "Jak grać",
     secondaryLabel: "Wybierz poziom",
     showInstructions: false,
     showLevelGrid: false,
     showPrimary: true,
+    showHelp: false,
     showSecondary: true,
     showBack: false,
   });
@@ -318,6 +456,9 @@ function loadLevel(levelIndex, { preserveProgress = false } = {}) {
   game.respawnY = level.spawn.y;
   game.checkpointLabel = "Początek";
   cameraX = 0;
+  game.damageFlash = 0;
+  game.screenShake = 0;
+  game.effects = [];
   clearInput();
   syncHud();
 }
@@ -338,6 +479,21 @@ function continueToLevel(levelIndex) {
 
 function restartCurrentLevel() {
   startLevel(game.currentLevelIndex);
+}
+
+function resumeGame() {
+  game.mode = "play";
+  hideOverlay();
+  clearInput();
+  syncHud();
+}
+
+function togglePause() {
+  if (game.mode === "play") {
+    showPauseScreen();
+  } else if (game.mode === "pause") {
+    resumeGame();
+  }
 }
 
 function createLevel(levelIndex = 0) {
@@ -611,6 +767,8 @@ function takeDamage(reason) {
     return;
   }
 
+  flashDamage();
+  spawnPopupEffect(player.x, player.y - 10, "-1", "#ff7b73");
   game.lives -= 1;
 
   if (game.lives <= 0) {
@@ -720,7 +878,11 @@ function updatePlayer(dt) {
   player.prevX = player.x;
   player.prevY = player.y;
 
-  const moveInput = (input.right ? 1 : 0) - (input.left ? 1 : 0);
+  const moveInput = clamp(
+    (input.right ? 1 : 0) - (input.left ? 1 : 0) + input.horizontal,
+    -1,
+    1,
+  );
   const wasOnGround = player.onGround;
 
   player.coyote = wasOnGround
@@ -796,6 +958,12 @@ function checkPlayerInteractions() {
       collectible.taken = true;
       game.score += ITEM_VALUES[collectible.type];
       game.collected += 1;
+      spawnPopupEffect(
+        collectible.x,
+        collectible.y - 8,
+        `+${ITEM_VALUES[collectible.type]}`,
+        collectible.type === "bamboo" ? "#8df56e" : "#ffcf71",
+      );
       syncHud();
     }
   }
@@ -819,6 +987,7 @@ function checkPlayerInteractions() {
       enemy.alive = false;
       player.vy = -JUMP_SPEED * 0.62;
       game.score += 50;
+      spawnPopupEffect(enemy.x, enemy.y - 8, "+50", "#ffcf71");
       syncHud();
     } else {
       takeDamage("Przeciwnik uderzył w pandę.");
@@ -884,6 +1053,13 @@ function updateEnemy(enemy, dt) {
 
 function update(dt) {
   game.time += dt;
+  game.damageFlash = Math.max(0, game.damageFlash - dt);
+  game.screenShake = Math.max(0, game.screenShake - dt);
+  for (const effect of game.effects) {
+    effect.age += dt;
+    effect.y -= effect.rise * dt;
+  }
+  game.effects = game.effects.filter((effect) => effect.age < effect.life);
 
   if (game.mode !== "play") {
     return;
@@ -909,7 +1085,7 @@ function resizeCanvas() {
     availableWidth / VIEW_WIDTH,
     availableHeight / VIEW_HEIGHT,
   );
-  const scale = rawScale < 1 ? Math.max(0.5, rawScale) : Math.floor(rawScale);
+  const scale = Math.max(0.5, rawScale);
 
   displayScale = scale;
   cssWidth = VIEW_WIDTH * displayScale;
@@ -1351,11 +1527,39 @@ function drawPandaBlocks(frame) {
   block(16, 8, 1, 1, "#5fcfff");
 }
 
+function drawEffects() {
+  const fontSize = Math.max(10, Math.round(10 * displayScale));
+  context.font = `bold ${fontSize}px monospace`;
+  context.textAlign = "center";
+  context.textBaseline = "middle";
+
+  for (const effect of game.effects) {
+    const progress = effect.age / effect.life;
+    const alpha = Math.max(0, 1 - progress);
+    const screenX = toScreenX(effect.x);
+    const screenY = toScreenY(effect.y);
+
+    context.save();
+    context.globalAlpha = alpha;
+    context.fillStyle = effect.color;
+    context.strokeStyle = "rgba(8, 16, 32, 0.85)";
+    context.lineWidth = Math.max(1, displayScale * 0.6);
+    context.strokeText(effect.text, screenX, screenY);
+    context.fillText(effect.text, screenX, screenY);
+    context.restore();
+  }
+}
+
 function render() {
   context.setTransform(backingScale, 0, 0, backingScale, 0, 0);
   context.imageSmoothingEnabled = false;
   context.clearRect(0, 0, cssWidth, cssHeight);
 
+  const shakeX = game.screenShake > 0 ? Math.sin(game.time * 220) * 1.6 : 0;
+  const shakeY = game.screenShake > 0 ? Math.cos(game.time * 180) * 1.2 : 0;
+
+  context.save();
+  context.translate(shakeX, shakeY);
   drawBackground();
   drawWorldTiles();
   drawHazards();
@@ -1364,6 +1568,13 @@ function render() {
   drawGoal();
   drawEnemies();
   drawPlayerSprite();
+  drawEffects();
+  context.restore();
+
+  if (game.damageFlash > 0) {
+    context.fillStyle = `rgba(255, 92, 92, ${game.damageFlash * 0.18})`;
+    context.fillRect(0, 0, cssWidth, cssHeight);
+  }
 }
 
 function step(timestamp) {
@@ -1385,26 +1596,40 @@ function step(timestamp) {
 }
 
 document.addEventListener("keydown", (event) => {
-  if (event.code === "Space" || event.key === "Enter") {
-    if (game.mode !== "play") {
-      event.preventDefault();
-      if (!startButton.hidden) {
-        startButton.click();
+  const key = event.key;
+
+  if (key === "Escape" || key === "Esc") {
+    event.preventDefault();
+    if (game.mode === "play") {
+      showPauseScreen();
+      return;
+    }
+
+    if (game.mode === "pause") {
+      resumeGame();
+      return;
+    }
+
+    if (game.mode === "how-to-play") {
+      if (game.overlayReturnMode === "pause") {
+        showPauseScreen();
+      } else {
+        showMenuScreen();
       }
       return;
     }
 
-    if (event.code === "Space") {
-      event.preventDefault();
-      input.jumpHeld = true;
-      if (!event.repeat) {
-        input.jumpQueued = true;
-      }
-      return;
-    }
+    showMenuScreen();
+    return;
   }
 
-  if (event.key === "r" || event.key === "R") {
+  if (key === "p" || key === "P") {
+    event.preventDefault();
+    togglePause();
+    return;
+  }
+
+  if (key === "r" || key === "R") {
     event.preventDefault();
     if (game.mode === "play") {
       restartCurrentLevel();
@@ -1414,23 +1639,32 @@ document.addEventListener("keydown", (event) => {
     return;
   }
 
-  if (event.key === "Escape" && game.mode !== "play") {
-    event.preventDefault();
-    showMenuScreen();
-    return;
-  }
-
   if (game.mode !== "play") {
+    if (event.code === "Enter" || event.code === "Space") {
+      event.preventDefault();
+      if (!startButton.hidden) {
+        startButton.click();
+      }
+    }
     return;
   }
 
-  if (event.key === "ArrowLeft" || event.key === "a" || event.key === "A") {
+  if (event.code === "Space") {
+    event.preventDefault();
+    input.jumpHeld = true;
+    if (!event.repeat) {
+      input.jumpQueued = true;
+    }
+    return;
+  }
+
+  if (key === "ArrowLeft" || key === "a" || key === "A") {
     event.preventDefault();
     input.left = true;
-  } else if (event.key === "ArrowRight" || event.key === "d" || event.key === "D") {
+  } else if (key === "ArrowRight" || key === "d" || key === "D") {
     event.preventDefault();
     input.right = true;
-  } else if (event.key === "ArrowUp" || event.key === "w" || event.key === "W") {
+  } else if (key === "ArrowUp" || key === "w" || key === "W") {
     event.preventDefault();
     input.jumpHeld = true;
     if (!event.repeat) {
@@ -1440,7 +1674,7 @@ document.addEventListener("keydown", (event) => {
 });
 
 document.addEventListener("keyup", (event) => {
-  if (event.code === "Space" || event.key === "Enter") {
+  if (event.code === "Space") {
     input.jumpHeld = false;
   }
 
@@ -1454,6 +1688,20 @@ document.addEventListener("keyup", (event) => {
 });
 
 startButton.addEventListener("click", () => {
+  if (game.mode === "pause") {
+    resumeGame();
+    return;
+  }
+
+  if (game.mode === "how-to-play") {
+    if (game.overlayReturnMode === "pause") {
+      resumeGame();
+    } else {
+      startLevel(0);
+    }
+    return;
+  }
+
   if (game.mode === "level-clear") {
     continueToLevel(game.currentLevelIndex + 1);
     return;
@@ -1472,11 +1720,44 @@ startButton.addEventListener("click", () => {
   startLevel(0);
 });
 
+helpButton.addEventListener("click", () => {
+  if (game.mode === "pause") {
+    showHowToPlayScreen("pause");
+    return;
+  }
+
+  showHowToPlayScreen("menu");
+});
+
 levelSelectButton.addEventListener("click", () => {
+  if (game.mode === "pause") {
+    restartCurrentLevel();
+    return;
+  }
+
+  if (game.mode === "how-to-play" && game.overlayReturnMode === "menu") {
+    showLevelSelectScreen();
+    return;
+  }
+
   showLevelSelectScreen();
 });
 
 backButton.addEventListener("click", () => {
+  if (game.mode === "how-to-play") {
+    if (game.overlayReturnMode === "pause") {
+      showPauseScreen();
+    } else {
+      showMenuScreen();
+    }
+    return;
+  }
+
+  if (game.mode === "pause") {
+    showMenuScreen();
+    return;
+  }
+
   showMenuScreen();
 });
 
@@ -1495,19 +1776,11 @@ restartButton.addEventListener("click", () => {
   }
 });
 
+pauseButton.addEventListener("click", () => {
+  togglePause();
+});
+
 controlButtons.forEach((button) => {
-  const action = button.dataset.action;
-
-  const release = () => {
-    if (action === "left") {
-      input.left = false;
-    } else if (action === "right") {
-      input.right = false;
-    } else if (action === "jump") {
-      input.jumpHeld = false;
-    }
-  };
-
   button.addEventListener("pointerdown", (event) => {
     event.preventDefault();
     button.setPointerCapture(event.pointerId);
@@ -1516,19 +1789,69 @@ controlButtons.forEach((button) => {
       return;
     }
 
-    if (action === "left") {
-      input.left = true;
-    } else if (action === "right") {
-      input.right = true;
-    } else if (action === "jump") {
-      input.jumpHeld = true;
-      input.jumpQueued = true;
-    }
+    input.jumpHeld = true;
+    input.jumpQueued = true;
   });
+
+  const release = () => {
+    input.jumpHeld = false;
+  };
 
   button.addEventListener("pointerup", release);
   button.addEventListener("pointercancel", release);
   button.addEventListener("lostpointercapture", release);
+});
+
+function updateJoystickFromPointer(event) {
+  if (game.mode !== "play") {
+    return;
+  }
+
+  const rect = joystick.getBoundingClientRect();
+  const centerX = rect.left + rect.width / 2;
+  const range = Math.max(1, rect.width * 0.32);
+  const horizontal = clamp((event.clientX - centerX) / range, -1, 1);
+  const snapped = Math.abs(horizontal) < JOYSTICK_DEADZONE ? 0 : horizontal;
+  setJoystickAxis(snapped);
+}
+
+joystick.addEventListener("pointerdown", (event) => {
+  event.preventDefault();
+  if (game.mode !== "play") {
+    return;
+  }
+
+  joystickPointerId = event.pointerId;
+  joystick.setPointerCapture(event.pointerId);
+  updateJoystickFromPointer(event);
+});
+
+joystick.addEventListener("pointermove", (event) => {
+  if (joystickPointerId !== event.pointerId) {
+    return;
+  }
+
+  updateJoystickFromPointer(event);
+});
+
+const releaseJoystick = (event) => {
+  if (joystickPointerId !== null && event.pointerId !== joystickPointerId) {
+    return;
+  }
+
+  joystickPointerId = null;
+  setJoystickAxis(0);
+};
+
+joystick.addEventListener("pointerup", releaseJoystick);
+joystick.addEventListener("pointercancel", releaseJoystick);
+joystick.addEventListener("lostpointercapture", releaseJoystick);
+
+window.addEventListener("blur", clearInput);
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) {
+    clearInput();
+  }
 });
 
 const resizeObserver = new ResizeObserver(() => {

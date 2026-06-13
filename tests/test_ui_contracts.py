@@ -13,9 +13,13 @@ GAME_JS = (ROOT / "game.js").read_text(encoding="utf-8")
 class UiContractsTest(unittest.TestCase):
     def test_start_screen_contains_level_selection_and_score_ui(self) -> None:
         self.assertIn('id="startButton"', INDEX_HTML)
+        self.assertIn('id="helpButton"', INDEX_HTML)
         self.assertIn('id="levelSelectButton"', INDEX_HTML)
         self.assertIn('id="backButton"', INDEX_HTML)
         self.assertIn('id="levelGrid"', INDEX_HTML)
+        self.assertIn('id="pauseButton"', INDEX_HTML)
+        self.assertIn('id="joystick"', INDEX_HTML)
+        self.assertIn('id="joystickThumb"', INDEX_HTML)
         self.assertIn('data-level="0"', INDEX_HTML)
         self.assertIn('data-level="1"', INDEX_HTML)
         self.assertIn('id="bestScore"', INDEX_HTML)
@@ -28,6 +32,7 @@ class UiContractsTest(unittest.TestCase):
         self.assertIn("touch-action: none;", STYLE_CSS)
         self.assertIn(".level-grid", STYLE_CSS)
         self.assertIn(".secondary-button", STYLE_CSS)
+        self.assertIn(".touch-controls", STYLE_CSS)
 
     def test_start_overlay_is_bounded_inside_viewport(self) -> None:
         self.assertIn("max-height: calc(100% - 16px);", STYLE_CSS)
@@ -35,6 +40,8 @@ class UiContractsTest(unittest.TestCase):
 
     def test_endgame_states_cover_level_progression_and_persistence(self) -> None:
         self.assertIn("showLevelSelectScreen()", GAME_JS)
+        self.assertIn("showHowToPlayScreen(", GAME_JS)
+        self.assertIn("showPauseScreen()", GAME_JS)
         self.assertIn("showLevelClearScreen(", GAME_JS)
         self.assertIn("showVictoryScreen()", GAME_JS)
         self.assertIn("continueToLevel(", GAME_JS)

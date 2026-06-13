@@ -1,13 +1,13 @@
 :root {
   color-scheme: dark;
   --sky-1: #8be5ff;
-  --sky-2: #52b4ff;
-  --sky-3: #2c72d2;
-  --panel: #162338;
-  --panel-2: #203251;
-  --panel-3: #0f1a2d;
+  --sky-2: #56b7ff;
+  --sky-3: #2c6dd0;
+  --panel: #17243b;
+  --panel-2: #203351;
+  --panel-3: #0d1627;
   --text: #f5fbff;
-  --muted: #c6d4ea;
+  --muted: #c7d5ea;
   --accent: #8df56e;
   --accent-2: #66e6ff;
   --warm: #ffcf71;
@@ -35,8 +35,8 @@ body {
   background:
     radial-gradient(circle at 18% 18%, rgba(255, 255, 255, 0.28), transparent 16%),
     radial-gradient(circle at 84% 10%, rgba(255, 246, 176, 0.24), transparent 18%),
-    radial-gradient(circle at 50% 100%, rgba(6, 14, 42, 0.78), transparent 32%),
-    linear-gradient(180deg, #86e5ff 0%, #57b8ff 33%, #316fd1 62%, #1b2958 100%);
+    radial-gradient(circle at 50% 100%, rgba(6, 14, 42, 0.8), transparent 32%),
+    linear-gradient(180deg, #87e6ff 0%, #57b8ff 34%, #2f6ecf 64%, #172554 100%);
 }
 
 body::before {
@@ -66,25 +66,32 @@ button {
 .app-shell {
   width: 100%;
   height: 100dvh;
-  padding: clamp(10px, 1.8vw, 22px);
+  padding: clamp(8px, 1.4vw, 20px);
 }
 
 .screen {
-  width: min(100%, 1100px);
+  width: min(100%, 1440px);
   height: 100%;
   margin: 0 auto;
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto auto;
-  gap: 14px;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 12px;
   min-height: 0;
 }
 
 .top-bar {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
   gap: 12px;
-  flex-wrap: wrap;
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  border-radius: 24px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), transparent),
+    rgba(9, 16, 30, 0.26);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 16px 34px rgba(3, 8, 23, 0.18);
 }
 
 .title-block {
@@ -109,34 +116,34 @@ h2 {
 }
 
 h1 {
-  font-size: clamp(1.55rem, 4vw, 2.9rem);
+  font-size: clamp(1.45rem, 3.5vw, 2.8rem);
   line-height: 1;
 }
 
 .hud {
   display: flex;
   align-items: stretch;
-  justify-content: flex-end;
+  justify-content: center;
   gap: 10px;
-  flex: 1;
   flex-wrap: wrap;
+  min-width: 0;
 }
 
 .hud-chip {
-  min-width: 98px;
-  padding: 10px 12px;
-  border: 2px solid rgba(6, 14, 26, 0.28);
+  min-width: 92px;
+  padding: 9px 11px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 16px;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.15), transparent),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.1), transparent),
     linear-gradient(180deg, var(--panel-2), var(--panel));
-  box-shadow: 0 12px 24px rgba(3, 8, 23, 0.22);
+  box-shadow: 0 10px 22px rgba(3, 8, 23, 0.2);
 }
 
 .hud-chip span {
   display: block;
   color: var(--muted);
-  font-size: 0.68rem;
+  font-size: 0.66rem;
   font-weight: 800;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -146,11 +153,20 @@ h1 {
   display: block;
   margin-top: 2px;
   color: var(--accent);
-  font-size: 1.35rem;
+  font-size: 1.18rem;
   line-height: 1;
 }
 
+.top-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-self: end;
+}
+
 .restart-button,
+.icon-button,
+.secondary-button,
 #startButton,
 .control {
   border: 0;
@@ -165,28 +181,42 @@ h1 {
     background-color 120ms ease;
 }
 
-.restart-button {
-  border: 2px solid rgba(6, 14, 26, 0.25);
-  background: linear-gradient(180deg, #fff8de, #f0ca72);
-  color: #2f240f;
+.restart-button,
+.icon-button {
+  border: 1px solid rgba(6, 14, 26, 0.24);
+  color: #1d2640;
   box-shadow: 0 12px 24px rgba(3, 8, 23, 0.16);
 }
 
+.restart-button {
+  background: linear-gradient(180deg, #fff8de, #f0ca72);
+}
+
+.icon-button {
+  background: linear-gradient(180deg, #f4f8ff, #bfd3ff);
+}
+
 .restart-button:hover,
+.icon-button:hover,
 #startButton:hover,
+.secondary-button:hover,
 .control:hover {
   transform: translateY(-1px);
   filter: brightness(1.03);
 }
 
 .restart-button:active,
+.icon-button:active,
 #startButton:active,
+.secondary-button:active,
 .control:active {
   transform: translateY(1px);
 }
 
 .restart-button:focus-visible,
+.icon-button:focus-visible,
 #startButton:focus-visible,
+.secondary-button:focus-visible,
 .control:focus-visible {
   outline: 3px solid white;
   outline-offset: 3px;
@@ -194,6 +224,7 @@ h1 {
 
 .board-stage {
   min-height: 0;
+  position: relative;
   display: grid;
   place-items: center;
 }
@@ -202,10 +233,12 @@ h1 {
   position: relative;
   overflow: hidden;
   border: 4px solid rgba(10, 16, 28, 0.88);
-  border-radius: 28px;
+  border-radius: 30px;
   background: #70cfff;
   box-shadow: 0 26px 70px var(--shadow);
   image-rendering: pixelated;
+  max-width: 100%;
+  max-height: 100%;
 }
 
 canvas {
@@ -224,7 +257,7 @@ canvas {
   display: grid;
   place-items: center;
   padding: 18px;
-  background: linear-gradient(180deg, rgba(5, 11, 27, 0.42), rgba(5, 11, 27, 0.74));
+  background: linear-gradient(180deg, rgba(5, 11, 27, 0.42), rgba(5, 11, 27, 0.76));
   backdrop-filter: blur(6px);
 }
 
@@ -233,15 +266,15 @@ canvas {
 }
 
 .overlay-card {
-  width: min(100%, 430px);
+  width: min(100%, 500px);
   max-height: calc(100% - 16px);
   overflow: auto;
   padding: 20px;
-  border: 2px solid rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 24px;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.1), transparent),
-    linear-gradient(180deg, rgba(18, 31, 56, 0.96), rgba(12, 20, 36, 0.98));
+    linear-gradient(180deg, rgba(255, 255, 255, 0.09), transparent),
+    linear-gradient(180deg, rgba(18, 31, 56, 0.97), rgba(12, 20, 36, 0.99));
   box-shadow: 0 24px 48px rgba(3, 8, 23, 0.4);
   text-align: center;
 }
@@ -365,10 +398,16 @@ canvas {
   font-weight: 700;
 }
 
+.overlay-actions {
+  display: grid;
+  gap: 10px;
+  margin-top: 6px;
+}
+
 #startButton,
 .secondary-button {
   width: 100%;
-  border: 2px solid rgba(6, 14, 26, 0.28);
+  border: 1px solid rgba(6, 14, 26, 0.28);
   box-shadow: 0 12px 24px rgba(3, 8, 23, 0.18);
 }
 
@@ -384,73 +423,109 @@ canvas {
   color: #14223f;
 }
 
-.overlay-actions {
-  display: grid;
-  gap: 10px;
-  margin-top: 6px;
+.touch-controls {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: clamp(8px, 1.4vw, 16px);
+  display: none;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 clamp(10px, 1.8vw, 18px);
+  pointer-events: none;
 }
 
-.controls {
-  display: none;
-  grid-template-columns: repeat(3, 66px);
-  justify-content: center;
-  gap: 10px;
+.joystick-shell {
+  width: clamp(112px, 28vw, 168px);
+  aspect-ratio: 1;
+  pointer-events: none;
+}
+
+.joystick {
+  --thumb-x: 0px;
+  --thumb-y: 0px;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 50% 45%, rgba(255, 255, 255, 0.16), transparent 34%),
+    linear-gradient(180deg, rgba(22, 35, 56, 0.82), rgba(8, 14, 24, 0.9));
+  box-shadow: 0 14px 28px rgba(3, 8, 23, 0.25);
+  pointer-events: auto;
   touch-action: none;
 }
 
+.joystick-ring {
+  position: absolute;
+  inset: 14%;
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 6px rgba(141, 245, 110, 0.04);
+}
+
+.joystick-thumb {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 38%;
+  height: 38%;
+  border-radius: 50%;
+  transform:
+    translate(calc(-50% + var(--thumb-x)), calc(-50% + var(--thumb-y)));
+  background:
+    radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.6), transparent 38%),
+    linear-gradient(180deg, #8df56e, #4fd96b);
+  box-shadow:
+    0 10px 18px rgba(0, 0, 0, 0.28),
+    inset 0 -3px 0 rgba(0, 0, 0, 0.18);
+}
+
 .control {
-  min-height: 54px;
-  border: 2px solid rgba(6, 14, 26, 0.25);
-  background: linear-gradient(180deg, #f3f7ff, #bfd3ff);
+  min-height: clamp(92px, 22vw, 156px);
+  min-width: clamp(92px, 22vw, 156px);
+  border: 1px solid rgba(6, 14, 26, 0.25);
+  background:
+    radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.55), transparent 28%),
+    linear-gradient(180deg, #f7fbff, #bfd3ff);
   color: #14223f;
   box-shadow: 0 12px 24px rgba(3, 8, 23, 0.18);
-  font-size: 1.2rem;
+  font-size: 1rem;
+  pointer-events: auto;
 }
 
 .control:active {
-  background: linear-gradient(180deg, #cde8ff, #8caeff);
+  background:
+    radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.45), transparent 28%),
+    linear-gradient(180deg, #cde8ff, #8caeff);
 }
 
-.hint {
-  display: flex;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 8px 10px;
-  margin: 0;
-  color: #eff7ff;
-  font-size: 0.84rem;
-  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.26);
+.control-jump {
+  border-radius: 28px;
+  padding: 14px 20px;
+  letter-spacing: 0.08em;
 }
 
-.hint span {
-  padding: 5px 10px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 999px;
-  background: rgba(10, 16, 28, 0.2);
+[hidden] {
+  display: none !important;
 }
 
-@media (pointer: coarse), (max-width: 760px) {
-  .controls {
-    display: grid;
-  }
-
-  .hint {
-    display: none;
+@media (pointer: coarse), (max-width: 920px) {
+  .touch-controls {
+    display: flex;
   }
 }
 
-@media (max-width: 640px) {
-  .app-shell {
-    padding: 12px;
-  }
-
+@media (max-width: 820px) {
   .top-bar {
-    align-items: stretch;
-    flex-direction: column;
+    grid-template-columns: 1fr;
+    justify-items: stretch;
   }
 
   .hud {
-    width: 100%;
+    justify-content: stretch;
   }
 
   .hud-chip {
@@ -458,7 +533,14 @@ canvas {
     min-width: 0;
   }
 
-  .restart-button {
+  .top-actions {
+    justify-self: stretch;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .restart-button,
+  .icon-button {
     width: 100%;
   }
 
@@ -470,11 +552,55 @@ canvas {
     padding: 16px;
   }
 
+  .overlay-actions {
+    margin-top: 8px;
+  }
+
   .start-steps {
     margin: 14px 0;
   }
 
   .level-grid {
     margin-top: 14px;
+  }
+}
+
+@media (max-width: 560px) {
+  .app-shell {
+    padding: 10px;
+  }
+
+  .top-bar {
+    padding: 10px 11px;
+  }
+
+  .hud {
+    gap: 8px;
+  }
+
+  .hud-chip {
+    padding: 8px 9px;
+  }
+
+  .hud-chip strong {
+    font-size: 1rem;
+  }
+
+  .overlay-card {
+    border-radius: 20px;
+  }
+
+  .touch-controls {
+    gap: 10px;
+    padding: 0 6px;
+  }
+
+  .joystick-shell {
+    width: clamp(104px, 30vw, 140px);
+  }
+
+  .control {
+    min-width: clamp(96px, 28vw, 132px);
+    min-height: clamp(96px, 28vw, 132px);
   }
 }
