@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="pl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <meta
+      name="description"
+      content="Pixel-artowa platformówka 2D z niebieską pandą czerwoną."
+    />
+    <title>Niebieska panda czerwona</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="screen screen--game" data-screen="game">
+        <header class="top-bar">
+          <div class="title-block">
+            <p class="eyebrow">Retro platformer</p>
+            <h1>Niebieska panda czerwona</h1>
+          </div>
+
+          <div class="hud" aria-label="Stan gry">
+            <div class="hud-chip">
+              <span>Punkty</span>
+              <strong id="score">0</strong>
+            </div>
+            <div class="hud-chip">
+              <span>Życia</span>
+              <strong id="lives">3</strong>
+            </div>
+            <div class="hud-chip">
+              <span>Skarby</span>
+              <strong id="collectibles">0/0</strong>
+            </div>
+          </div>
+
+          <button id="restartButton" type="button" class="restart-button">
+            Restart
+          </button>
+        </header>
+
+        <div class="board-stage">
+          <section class="board-wrap" aria-label="Gra platformowa 2D">
+            <canvas id="game">
+              Twoja przeglądarka nie obsługuje elementu canvas wymaganego przez
+              grę.
+            </canvas>
+
+            <div class="overlay" id="overlay">
+              <div class="overlay-card">
+                <p class="overlay-badge" id="overlayBadge">Ekran startowy</p>
+                <p class="overlay-kicker" id="overlayKicker">W drogę</p>
+                <h2 id="overlayTitle">Skacz po bambusowym szlaku</h2>
+                <p id="overlayText">
+                  Biegnij w prawo, zbieraj bambusowe monety i listki, omijaj
+                  przeciwników oraz przeszkody i dotrzyj do flagi na końcu
+                  poziomu.
+                </p>
+                <div class="start-steps" aria-label="Jak grać">
+                  <div class="start-step">
+                    <strong>1</strong>
+                    <span>Poruszaj się w lewo i prawo, żeby rozpędzić pandę.</span>
+                  </div>
+                  <div class="start-step">
+                    <strong>2</strong>
+                    <span>Skacz po platformach i zbieraj pixelowe skarby.</span>
+                  </div>
+                  <div class="start-step">
+                    <strong>3</strong>
+                    <span>Unikaj wrogów, nie wpadaj w pułapki i dotrzyj do mety.</span>
+                  </div>
+                </div>
+                <p class="overlay-summary" id="overlaySummary" hidden></p>
+                <button id="startButton" type="button">Rozpocznij grę</button>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <div class="controls" aria-label="Sterowanie dotykowe">
+          <button
+            class="control control-left"
+            data-action="left"
+            aria-label="Lewo"
+          >
+            ←
+          </button>
+          <button
+            class="control control-jump"
+            data-action="jump"
+            aria-label="Skok"
+          >
+            ↑
+          </button>
+          <button
+            class="control control-right"
+            data-action="right"
+            aria-label="Prawo"
+          >
+            →
+          </button>
+        </div>
+
+        <p class="hint">
+          <span>Strzałki / WASD</span> ruch
+          <span>Spacja</span> skok
+          <span>Enter</span> start lub restart
+        </p>
+      </section>
+    </main>
+
+    <script src="game.js"></script>
+  </body>
+</html>
