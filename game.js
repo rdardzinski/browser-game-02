@@ -28,8 +28,8 @@ const touchControls = document.querySelector(".touch-controls");
 const controlButtons = document.querySelectorAll("[data-action]");
 const levelButtons = document.querySelectorAll("[data-level]");
 
-const VIEW_WIDTH = 352;
-const VIEW_HEIGHT = 208;
+const VIEW_WIDTH = 384;
+const VIEW_HEIGHT = 256;
 const TILE_SIZE = 16;
 const LEVEL_WIDTH_TILES = 192;
 const LEVEL_HEIGHT_TILES = 12;
@@ -49,6 +49,9 @@ const INVINCIBLE_TIME = 1.1;
 const STORAGE_KEY_BEST_SCORE = "browser-game-02.bestScore";
 const JOYSTICK_MAX_OFFSET = 22;
 const JOYSTICK_DEADZONE = 0.18;
+const PLAYER_WIDTH = 20;
+const PLAYER_HEIGHT = 28;
+const PLAYER_DRAW_WIDTH = 25;
 
 const TILE = {
   EMPTY: 0,
@@ -120,7 +123,7 @@ const game = {
   totalCollectibles: 0,
   time: 0,
   respawnX: TILE_SIZE * 2,
-  respawnY: WORLD_HEIGHT - TILE_SIZE * 2 - 4,
+  respawnY: WORLD_HEIGHT - TILE_SIZE - PLAYER_HEIGHT,
   checkpointLabel: "Początek",
   currentLevelIndex: 0,
   bestScore: loadBestScore(),
@@ -572,7 +575,7 @@ function createLevel(levelIndex = 0) {
       width: 18,
       height: 34,
       respawnX: x,
-      respawnY: y + 14,
+      respawnY: y + 34 - PLAYER_HEIGHT,
       label,
       activated: false,
     });
@@ -718,7 +721,7 @@ function createLevel(levelIndex = 0) {
     goal,
     spawn: {
       x: TILE_SIZE * 2,
-      y: WORLD_HEIGHT - TILE_SIZE * 2 - 4,
+      y: WORLD_HEIGHT - TILE_SIZE - PLAYER_HEIGHT,
     },
   };
 }
@@ -729,8 +732,8 @@ function createPlayer(x, y) {
     y,
     prevX: x,
     prevY: y,
-    width: 14,
-    height: 20,
+    width: PLAYER_WIDTH,
+    height: PLAYER_HEIGHT,
     vx: 0,
     vy: 0,
     facing: 1,
@@ -1457,7 +1460,7 @@ function drawPlayerSprite() {
   const screenX = toScreenX(player.x);
   const screenY = toScreenY(player.y);
   const walking = player.onGround && Math.abs(player.vx) > 12;
-  const frame = !player.onGround ? 3 : walking ? Math.floor(game.time * 14) % 2 : 0;
+  const frame = !player.onGround ? 3 : walking ? Math.floor(game.time * 12) % 3 : 0;
   const s = displayScale;
 
   context.save();
@@ -1467,7 +1470,7 @@ function drawPlayerSprite() {
 
   context.translate(screenX, screenY);
   if (player.facing < 0) {
-    context.translate(18 * s, 0);
+    context.translate(PLAYER_DRAW_WIDTH * s, 0);
     context.scale(-1, 1);
   }
 
@@ -1477,54 +1480,79 @@ function drawPlayerSprite() {
 
 function drawPandaBlocks(frame) {
   const s = displayScale;
-  const jumpLift = frame === 3 ? -1 : 0;
+  const jumpLift = frame === 3 ? -2 : 0;
+  const pose = frame === 1 ? 1 : frame === 2 ? -1 : 0;
 
   const block = (x, y, width, height, color) => {
     context.fillStyle = color;
     context.fillRect(x * s, y * s, width * s, height * s);
   };
 
-  block(3, 7 + jumpLift, 11, 8, "#16325e");
-  block(4, 8 + jumpLift, 9, 6, "#4ea7ff");
-  block(5, 9 + jumpLift, 7, 4, "#8de8ff");
-  block(4, 4 + jumpLift, 8, 5, "#16325e");
-  block(5, 5 + jumpLift, 6, 3, "#a6efff");
-  block(6, 6 + jumpLift, 1, 1, "#f8fdff");
-  block(9, 6 + jumpLift, 1, 1, "#f8fdff");
-  block(7, 6 + jumpLift, 2, 1, "#091224");
-  block(4, 3 + jumpLift, 2, 2, "#16325e");
-  block(9, 3 + jumpLift, 2, 2, "#16325e");
-  block(5, 2 + jumpLift, 1, 1, "#4ea7ff");
-  block(10, 2 + jumpLift, 1, 1, "#4ea7ff");
-  block(10, 4 + jumpLift, 5, 3, "#2b5a9a");
-  block(12, 3 + jumpLift, 3, 4, "#16325e");
-  block(13, 5 + jumpLift, 2, 2, "#8de8ff");
-  block(13, 8 + jumpLift, 3, 3, "#2b5a9a");
-  block(11, 8 + jumpLift, 4, 4, "#16325e");
-  block(12, 9 + jumpLift, 2, 2, "#5fcfff");
+  block(6, 11 + jumpLift, 12, 12, "#16325e");
+  block(7, 12 + jumpLift, 10, 10, "#4ea7ff");
+  block(8, 13 + jumpLift, 8, 7, "#8de8ff");
+  block(9, 14 + jumpLift, 6, 4, "#baf7ff");
+  block(10, 16 + jumpLift, 4, 2, "#f8fdff");
 
-  if (frame === 0) {
-    block(4, 12, 2, 3, "#16325e");
-    block(8, 12, 2, 3, "#16325e");
-    block(12, 11, 2, 4, "#16325e");
-  } else if (frame === 1) {
-    block(4, 12, 2, 3, "#16325e");
-    block(8, 11, 2, 4, "#16325e");
-    block(12, 12, 2, 3, "#16325e");
-  } else if (frame === 2) {
-    block(4, 11, 2, 4, "#16325e");
-    block(8, 12, 2, 3, "#16325e");
-    block(12, 11, 2, 4, "#16325e");
+  block(7, 4 + jumpLift, 10, 8, "#16325e");
+  block(8, 5 + jumpLift, 8, 6, "#4ea7ff");
+  block(9, 6 + jumpLift, 6, 4, "#a6efff");
+  block(10, 7 + jumpLift, 4, 2, "#f8fdff");
+  block(8, 6 + jumpLift, 1, 1, "#f8fdff");
+  block(13, 6 + jumpLift, 1, 1, "#f8fdff");
+  block(10, 8 + jumpLift, 1, 1, "#091224");
+  block(12, 8 + jumpLift, 1, 1, "#091224");
+  block(10, 9 + jumpLift, 3, 1, "#091224");
+  block(11, 9 + jumpLift, 1, 1, "#f9fbff");
+
+  block(6, 3 + jumpLift, 3, 3, "#16325e");
+  block(15, 3 + jumpLift, 3, 3, "#16325e");
+  block(7, 4 + jumpLift, 1, 1, "#4ea7ff");
+  block(16, 4 + jumpLift, 1, 1, "#4ea7ff");
+
+  block(17, 10 + jumpLift, 4, 3, "#16325e");
+  block(18, 9 + jumpLift, 3, 10, "#2b5a9a");
+  block(19, 10 + jumpLift, 2, 8, "#4ea7ff");
+  block(20, 12 + jumpLift, 2, 5, "#8de8ff");
+  block(21, 13 + jumpLift, 1, 3, "#f8fdff");
+  block(18, 16 + jumpLift, 4, 2, "#5fcfff");
+  block(19, 18 + jumpLift, 3, 2, "#16325e");
+
+  if (frame === 3) {
+    block(5, 13 + jumpLift, 2, 4, "#16325e");
+    block(16, 13 + jumpLift, 2, 4, "#16325e");
+    block(7, 20 + jumpLift, 3, 4, "#16325e");
+    block(12, 20 + jumpLift, 3, 4, "#16325e");
+    block(7, 19 + jumpLift, 3, 2, "#4ea7ff");
+    block(12, 19 + jumpLift, 3, 2, "#4ea7ff");
+    block(8, 21 + jumpLift, 1, 1, "#f8fdff");
+    block(13, 21 + jumpLift, 1, 1, "#f8fdff");
+  } else if (pose === 1) {
+    block(4, 13 + jumpLift, 2, 5, "#16325e");
+    block(16, 14 + jumpLift, 2, 4, "#16325e");
+    block(6, 20 + jumpLift, 3, 5, "#16325e");
+    block(12, 21 + jumpLift, 3, 4, "#16325e");
+    block(6, 19 + jumpLift, 3, 2, "#4ea7ff");
+    block(12, 20 + jumpLift, 3, 2, "#4ea7ff");
+  } else if (pose === -1) {
+    block(4, 14 + jumpLift, 2, 4, "#16325e");
+    block(16, 13 + jumpLift, 2, 5, "#16325e");
+    block(6, 21 + jumpLift, 3, 4, "#16325e");
+    block(12, 20 + jumpLift, 3, 5, "#16325e");
+    block(6, 20 + jumpLift, 3, 2, "#4ea7ff");
+    block(12, 19 + jumpLift, 3, 2, "#4ea7ff");
   } else {
-    block(4, 11, 2, 3, "#16325e");
-    block(8, 11, 2, 3, "#16325e");
-    block(12, 11, 2, 3, "#16325e");
+    block(4, 14 + jumpLift, 2, 4, "#16325e");
+    block(16, 14 + jumpLift, 2, 4, "#16325e");
+    block(6, 20 + jumpLift, 3, 5, "#16325e");
+    block(12, 20 + jumpLift, 3, 5, "#16325e");
+    block(6, 19 + jumpLift, 3, 2, "#4ea7ff");
+    block(12, 19 + jumpLift, 3, 2, "#4ea7ff");
   }
 
-  block(14, 6, 2, 3, "#16325e");
-  block(15, 5, 2, 4, "#2b5a9a");
-  block(16, 6, 1, 1, "#5fcfff");
-  block(16, 8, 1, 1, "#5fcfff");
+  block(18, 20 + jumpLift, 3, 2, "#4ea7ff");
+  block(20, 21 + jumpLift, 2, 2, "#16325e");
+  block(19, 22 + jumpLift, 4, 2, "#16325e");
 }
 
 function drawEffects() {

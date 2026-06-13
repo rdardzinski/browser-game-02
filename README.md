@@ -1,8 +1,8 @@
 # Niebieska panda czerwona
 
 Pixel-artowa platformówka 2D napisana w HTML, CSS i czystym JavaScript.
-Wersja v0.3 dodaje większy widok gry, ekran pauzy, osobny ekran "Jak grać",
-joystick dotykowy oraz bardziej kompaktowy HUD.
+Wersja v0.3 utrzymuje pixel-artowy styl, ale daje większy widok gry, ekran
+pauzy, osobny ekran "Jak grać", joystick dotykowy i minimalistyczny HUD.
 
 Gra działa lokalnie bez zewnętrznych bibliotek i assetów. Możesz otworzyć
 `index.html` bezpośrednio w przeglądarce albo uruchomić prosty serwer HTTP.
@@ -34,7 +34,7 @@ Następnie wejdź na `http://localhost:8080`.
 - Unikaj kolców i przeciwników. Trafienie zabiera życie i daje krótki efekt
   wizualny.
 - Pauza pozwala bezpiecznie wrócić do gry, instrukcji albo menu.
-- Najważniejszy HUD pokazuje tylko punkty, życia, poziom i najlepszy wynik.
+- W trakcie gry HUD pokazuje tylko punkty, życia i poziom.
 
 ## Mechaniki
 
@@ -53,6 +53,7 @@ Następnie wejdź na `http://localhost:8080`.
 - zapis najlepszego wyniku w `localStorage`
 - ekran Game Over
 - ekran zwycięstwa po dotarciu do końca poziomu
+- scena gry zajmuje możliwie dużo miejsca na desktopie i mobile
 
 ## Uwagi
 

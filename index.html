@@ -16,40 +16,21 @@
   <body>
     <main class="app-shell">
       <section class="screen screen--game" data-screen="game">
-        <header class="top-bar">
-          <div class="title-block">
-            <p class="eyebrow">Retro platformer</p>
-            <h1>Niebieska panda czerwona</h1>
+        <div class="hud-strip" aria-label="Stan gry">
+          <div class="hud-chip">
+            <span>Punkty</span>
+            <strong id="score">0</strong>
           </div>
-
-          <div class="hud" aria-label="Stan gry">
-            <div class="hud-chip">
-              <span>Punkty</span>
-              <strong id="score">0</strong>
-            </div>
-            <div class="hud-chip">
-              <span>Życia</span>
-              <strong id="lives">3</strong>
-            </div>
-            <div class="hud-chip">
-              <span>Poziom</span>
-              <strong id="levelIndicator">1/2</strong>
-            </div>
-            <div class="hud-chip">
-              <span>Najlepszy</span>
-              <strong id="bestScore">0</strong>
-            </div>
+          <div class="hud-chip">
+            <span>Życia</span>
+            <strong id="lives">3</strong>
           </div>
-
-          <div class="top-actions">
-            <button id="restartButton" type="button" class="restart-button">
-              Restart
-            </button>
-            <button id="pauseButton" type="button" class="icon-button">
-              Pauza
-            </button>
+          <div class="hud-chip">
+            <span>Poziom</span>
+            <strong id="levelIndicator">1/2</strong>
           </div>
-        </header>
+          <strong id="bestScore" hidden>0</strong>
+        </div>
 
         <div class="board-stage">
           <section class="board-wrap" aria-label="Gra platformowa 2D">
@@ -78,7 +59,7 @@
                   </div>
                   <div class="start-step">
                     <strong>3</strong>
-                    <span>Pause uruchomisz klawiszem P, Esc albo przyciskiem Pauza.</span>
+                    <span>Pauzę uruchomisz klawiszem P, Esc albo przyciskiem Pauza.</span>
                   </div>
                 </div>
                 <div class="level-grid" id="levelGrid" hidden>
@@ -129,6 +110,15 @@
             aria-label="Skok"
           >
             SKOK
+          </button>
+        </div>
+
+        <div class="legacy-actions" hidden aria-hidden="true">
+          <button id="restartButton" type="button" class="restart-button">
+            Restart
+          </button>
+          <button id="pauseButton" type="button" class="icon-button">
+            Pauza
           </button>
         </div>
       </section>
